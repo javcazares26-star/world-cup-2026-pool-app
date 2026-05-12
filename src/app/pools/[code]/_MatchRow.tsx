@@ -1,0 +1,108 @@
+"use client";
+import type { Fixture, Pick } from "@/lib/types";
+import { useEffect, useState } from "react";
+
+type Props = {
+  fixture: Fixture;
+  pick?: Pick;
+  showActual?: boolean;
+  onSave: (fixtureId: number, home: number, away: number) => void;
+};
+
+export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
+  const [home, setHome] = useState(pick?.home_pick ?? 0);
+  const [away, setAway] = useState(pick?.away_pick ?? 0);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (pick) { setHome(pick.home_pick); setAway(pick.away_pick); }
+  }, [pick]);
+
+  const locked = pick?.locked || (fixture.status_short && fixture.status_short !== "NS");
+  const isLive = ["1H","2H","ET","LIVE","HT","BT","P"].includes(fixture.status_short ?? "");
+  const isFinal = ["FT","AET","PEN"].includes(fixture.status_short ?? "");
+  const ko = new Date(fixture.kickoff_utc);
+
+  function bump(side: "h"|"a", d: number) {
+    if (locked) return;
+    const setter = side === "h" ? setHome : setAway;
+    const cur = side === "h" ? home : away;
+    const next = Math.max(0, Math.min(20, cur + d));
+    setter(next);
+    onSave(fixture.id, side === "h" ? next : home, side === "a" ? next : away);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 800);
+  }
+
+  // Compute points for this fixture (mirrors v_pick_scores)
+  let pointsLabel: string | null = null;
+  let pointsClass = "";
+  if (isFinal && pick) {
+    if (pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score) {
+      pointsLabel = "+3 EXACT"; pointsClass = "bg-[#06d6a0] text-[#0a1a14]";
+    } else if (Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0))) {
+      pointsLabel = "+1"; pointsClass = "bg-[#ffd23f] text-[#2a2200]";
+    } else {
+      pointsLabel = "0"; pointsClass = "bg-[#222c5a] text-[#9aa3c7]";
+    }
+  }
+
+  return (
+    <div className={"px-4 py-3 border-b border-[#2a3566] last:border-b-0 " + (isLive ? "bg-[rgba(255,77,109,0.06)]" : "")}>
+      <div className="flex justify-between text-[10px] text-[#9aa3c7] mb-1">
+        <span>{fixture.group_label ?? fixture.round}</span>
+        {isLive ? <span className="live-dot text-[#ff4d6d] font-bold">{fixture.minute ?? ""}' LIVE</span>
+          : isFinal ? <span className="text-[#06d6a0] font-bold">FINAL</span>
+          : <span>{ko.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>}
+      </div>
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+        <div className="flex items-center gap-2 min-w-0">
+          {fixture.home_logo && <img src={fixture.home_logo} alt="" className="w-6 h-6" />}
+          <span className="font-medium text-sm truncate">{fixture.home_team}</span>
+        </div>
+        <div className="flex items-center gap-1 bg-[#0b1020] border border-[#2a3566] rounded-lg p-1">
+          <div className="flex flex-col">
+            <button onClick={() => bump("h", 1)} disabled={!!locked} className="bg-[#222c5a] text-xs w-6 h-4 rounded hover:bg-[#ff4d6d] disabled:opacity-40">▲</button>
+            <button onClick={() => bump("h", -1)} disabled={!!locked} className="bg-[#222c5a] text-xs w-6 h-4 rounded hover:bg-[#ff4d6d] disabled:opacity-40 mt-px">▼</button>
+          </div>
+          <input
+            type="number" min={0} max={20} value={home}
+            disabled={!!locked}
+            onChange={(e) => {
+              const v = Math.max(0, Math.min(20, parseInt(e.target.value || "0", 10)));
+              setHome(v); onSave(fixture.id, v, away);
+            }}
+            className="w-10 h-8 bg-transparent text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <span className="text-xs text-[#9aa3c7]">vs</span>
+          <input
+            type="number" min={0} max={20} value={away}
+            disabled={!!locked}
+            onChange={(e) => {
+              const v = Math.max(0, Math.min(20, parseInt(e.target.value || "0", 10)));
+              setAway(v); onSave(fixture.id, home, v);
+            }}
+            className="w-10 h-8 bg-transparent text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <div className="flex flex-col">
+            <button onClick={() => bump("a", 1)} disabled={!!locked} className="bg-[#222c5a] text-xs w-6 h-4 rounded hover:bg-[#ff4d6d] disabled:opacity-40">▲</button>
+            <button onClick={() => bump("a", -1)} disabled={!!locked} className="bg-[#222c5a] text-xs w-6 h-4 rounded hover:bg-[#ff4d6d] disabled:opacity-40 mt-px">▼</button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 justify-end min-w-0">
+          <span className="font-medium text-sm truncate text-right">{fixture.away_team}</span>
+          {fixture.away_logo && <img src={fixture.away_logo} alt="" className="w-6 h-6" />}
+        </div>
+      </div>
+      {(showActual || isFinal || isLive) && (fixture.home_score !== null) && (
+        <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-[#2a3566] text-xs">
+          <span className="text-[#9aa3c7]">
+            Score: <span className="text-[#ffd23f] font-bold">{fixture.home_score} – {fixture.away_score}</span>
+          </span>
+          {pointsLabel && <span className={"px-2 py-0.5 rounded-full font-bold text-[11px] " + pointsClass}>{pointsLabel}</span>}
+        </div>
+      )}
+      {saved && !locked && <div className="text-[10px] text-[#06d6a0] mt-1">✓ Saved</div>}
+    </div>
+  );
+}
