@@ -12,17 +12,29 @@ export default function NewPoolPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;          // prevent double-submit
     setErr(null); setBusy(true);
     const supabase = createClient();
-    const { data, error } = await supabase.rpc("create_pool", {
+
+    const { data: poolId, error } = await supabase.rpc("create_pool", {
       p_name: name.trim(),
       p_code: code.trim() || null,
     });
-    setBusy(false);
-    if (error) { setErr(error.message); return; }
-    // Need to fetch back the code; easiest is to look up by id.
-    const { data: pool } = await supabase.from("pools").select("code").eq("id", data).single();
-    if (pool) router.push(`/pools/${pool.code}`);
+    if (error) { setBusy(false); setErr(error.message); return; }
+
+    // Try to fetch the code; if RLS or timing prevents it, fall back to /pools list.
+    const { data: pool } = await supabase
+      .from("pools")
+      .select("code")
+      .eq("id", poolId as string)
+      .maybeSingle();
+
+    if (pool?.code) {
+      router.push(`/pools/${pool.code}`);
+    } else {
+      // Fallback: pool exists, we just can't read it back yet — go to list.
+      router.push("/pools");
+    }
   }
 
   return (
