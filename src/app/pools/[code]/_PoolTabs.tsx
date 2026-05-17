@@ -5,6 +5,7 @@ import type { Fixture, Pick, Pool, LeaderboardRow } from "@/lib/types";
 import { MatchRow } from "./_MatchRow";
 import { Leaderboard } from "./_Leaderboard";
 import { Kpis } from "./_Kpis";
+import { FairPlay } from "./_FairPlay";
 
 type Props = {
   pool: Pool;
@@ -104,6 +105,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
         {[
           ["picks", "📝 Picks"],
           ["live", "📺 Live"],
+          ["fairplay", "📊 FairPlay"],
           ["leaderboard", "🥇 Leaderboard"],
         ].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}
@@ -149,6 +151,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             <div className="card text-center text-[#9aa3c7]">Nothing live yet. Check back during match windows.</div>
           )}
         </div>
+      )}
+
+      {tab === "fairplay" && (
+        <FairPlay fixtures={fixtures} />
       )}
 
       {tab === "leaderboard" && (
