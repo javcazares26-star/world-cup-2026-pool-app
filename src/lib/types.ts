@@ -56,3 +56,14 @@ export type LeaderboardRow = {
   points: number;
   exact_count: number;
 };
+
+export type Message = {
+  id: string;
+  pool_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  // Joined from profiles (populated on initial fetch)
+  display_name?: string;
+  avatar_url?: string | null;
+};

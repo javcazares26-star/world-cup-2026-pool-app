@@ -6,6 +6,8 @@ import { MatchRow } from "./_MatchRow";
 import { Leaderboard } from "./_Leaderboard";
 import { Kpis } from "./_Kpis";
 import { FairPlay } from "./_FairPlay";
+import { Chat } from "./_Chat";
+import type { Message } from "@/lib/types";
 
 type Props = {
   pool: Pool;
@@ -13,10 +15,11 @@ type Props = {
   fixtures: Fixture[];
   myPicks: Pick[];
   leaderboard: LeaderboardRow[];
+  messages: Message[];
   initialTab: string;
 };
 
-export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: initialPicks, leaderboard: initialLb, initialTab }: Props) {
+export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: initialPicks, leaderboard: initialLb, messages: initialMessages, initialTab }: Props) {
   const [tab, setTab] = useState(initialTab);
   const [fixtures, setFixtures] = useState(initialFixtures);
   const [picks, setPicks] = useState(initialPicks);
@@ -107,6 +110,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           ["live", "📺 Live"],
           ["fairplay", "📊 FairPlay"],
           ["leaderboard", "🥇 Leaderboard"],
+          ["chat", "💬 Chat"],
         ].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}
             className={"px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-1 min-w-max " +
@@ -159,6 +163,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
 
       {tab === "leaderboard" && (
         <Leaderboard rows={leaderboard} meId={userId} />
+      )}
+
+      {tab === "chat" && (
+        <Chat poolId={pool.id} userId={userId} initial={initialMessages} />
       )}
     </>
   );
