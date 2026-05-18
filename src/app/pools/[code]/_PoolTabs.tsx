@@ -7,7 +7,7 @@ import { Leaderboard } from "./_Leaderboard";
 import { Kpis } from "./_Kpis";
 import { FairPlay } from "./_FairPlay";
 import { Chat } from "./_Chat";
-import { Admin, type Member } from "./_Admin";
+import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import type { Message } from "@/lib/types";
 
 type Props = {
@@ -18,10 +18,11 @@ type Props = {
   leaderboard: LeaderboardRow[];
   messages: Message[];
   members: Member[];
+  ownedPools: OwnedPoolRef[];
   initialTab: string;
 };
 
-export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: initialPicks, leaderboard: initialLb, messages: initialMessages, members: initialMembers, initialTab }: Props) {
+export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: initialPicks, leaderboard: initialLb, messages: initialMessages, members: initialMembers, ownedPools, initialTab }: Props) {
   const isOwner = pool.owner_id === userId;
   const [tab, setTab] = useState(initialTab);
   const [fixtures, setFixtures] = useState(initialFixtures);
@@ -119,8 +120,8 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           <button key={id} onClick={() => setTab(id)}
             className={"px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-1 min-w-max " +
               (tab === id
-                ? "bg-gradient-to-r from-[#ff4d6d] to-[#ffd23f] text-[#1a1a1a]"
-                : "text-[#9aa3c7] hover:text-white")}>
+                ? "bg-gradient-to-r from-[var(--crimson)] to-[var(--gold)] text-[#1a1a1a]"
+                : "text-[var(--muted)] hover:text-[var(--text)]")}>
             {label}
           </button>
         ))}
@@ -140,7 +141,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           ))}
           {fixtures.length === 0 && (
             <div className="card col-span-2 text-center">
-              <p className="text-[#9aa3c7]">Fixtures haven't synced yet. The cron will populate them within 5 minutes after deploy. You can also hit <code>/api/cron/sync-fixtures?secret=…&amp;mode=full</code> manually.</p>
+              <p className="text-[var(--muted)]">Fixtures haven't synced yet. The cron will populate them within 5 minutes after deploy. You can also hit <code>/api/cron/sync-fixtures?secret=…&amp;mode=full</code> manually.</p>
             </div>
           )}
         </div>
@@ -156,7 +157,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             </div>
           ))}
           {fixtures.every(f => f.status_short === "NS") && (
-            <div className="card text-center text-[#9aa3c7]">Nothing live yet. Check back during match windows.</div>
+            <div className="card text-center text-[var(--muted)]">Nothing live yet. Check back during match windows.</div>
           )}
         </div>
       )}
@@ -174,7 +175,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       )}
 
       {tab === "admin" && isOwner && (
-        <Admin pool={pool} userId={userId} members={initialMembers} />
+        <Admin pool={pool} userId={userId} members={initialMembers} ownedPools={ownedPools} />
       )}
     </>
   );

@@ -30,17 +30,17 @@ export default async function PoolsListPage() {
         <div className="card text-center">
           <div className="text-5xl">🏆</div>
           <h2 className="text-xl font-bold mt-3">You're not in any pool yet</h2>
-          <p className="text-[#9aa3c7] text-sm mt-2">Create your own pool, or join one with a friend's code.</p>
+          <p className="text-[var(--muted)] text-sm mt-2">Create your own pool, or join one with a friend's code.</p>
         </div>
       ) : (
         <div className="grid gap-3">
           {pools.map((p: any) => (
-            <Link key={p.id} href={`/pools/${p.code}`} className="card hover:border-[#ff4d6d] transition flex justify-between items-center">
+            <Link key={p.id} href={`/pools/${p.code}`} className="card hover:border-[var(--crimson)] transition flex justify-between items-center">
               <div>
                 <div className="font-bold">{p.name}</div>
-                <div className="text-xs text-[#9aa3c7] font-mono mt-1">CODE: {p.code}</div>
+                <div className="text-xs text-[var(--muted)] font-mono mt-1">CODE: {p.code}</div>
               </div>
-              <div className="text-[#ffd23f]">→</div>
+              <div className="text-[var(--gold)]">→</div>
             </Link>
           ))}
         </div>

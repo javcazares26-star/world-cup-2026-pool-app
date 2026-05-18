@@ -21,18 +21,18 @@ export function JoinPoolForm() {
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-2">
-      <label className="text-xs uppercase tracking-wider text-[#9aa3c7]">Join with code</label>
+      <label className="text-xs uppercase tracking-wider text-[var(--muted)]">Join with code</label>
       <div className="flex gap-2">
         <input
           value={code}
           onChange={e => setCode(e.target.value.toUpperCase())}
           placeholder="MEXFAM"
           maxLength={12}
-          className="flex-1 bg-[#0b1020] border border-[#2a3566] rounded-lg px-3 py-2 font-mono uppercase tracking-widest text-center outline-none focus:border-[#ff4d6d]"
+          className="flex-1 bg-[var(--bg-2)] border border-[var(--border)] rounded-lg px-3 py-2 font-mono uppercase tracking-widest text-center outline-none focus:border-[var(--crimson)]"
         />
         <button disabled={busy || !code} className="btn">Join</button>
       </div>
-      {err && <div className="text-xs text-[#ff4d6d]">{err}</div>}
+      {err && <div className="text-xs text-[var(--crimson)]">{err}</div>}
     </form>
   );
 }

@@ -146,17 +146,17 @@ export function Chat({ poolId, userId, initial }: Props) {
 
   return (
     <div className="card !p-0 overflow-hidden flex flex-col" style={{ height: "min(70vh, 600px)" }}>
-      <div className="px-4 py-3 border-b border-[#2a3566] flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
         <div>
           <h2 className="font-bold text-base">Pool chat</h2>
-          <p className="text-[10px] text-[#9aa3c7]">Only members of this pool can see and post here.</p>
+          <p className="text-[10px] text-[var(--muted)]">Only members of this pool can see and post here.</p>
         </div>
-        <div className="text-[10px] text-[#9aa3c7]">{messages.length} message{messages.length === 1 ? "" : "s"}</div>
+        <div className="text-[10px] text-[var(--muted)]">{messages.length} message{messages.length === 1 ? "" : "s"}</div>
       </div>
 
       <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center text-[#9aa3c7] mt-12">
+          <div className="text-center text-[var(--muted)] mt-12">
             <div className="text-4xl mb-2">💬</div>
             <p className="text-sm">No messages yet. Be the first to say something!</p>
             <p className="text-xs mt-1 opacity-70">Try: <em>"Quien gana el viernes?"</em></p>
@@ -169,11 +169,11 @@ export function Chat({ poolId, userId, initial }: Props) {
             <div key={gi} className={"flex gap-3 " + (isMe ? "flex-row-reverse" : "")}>
               {group.avatar
                 ? <img src={group.avatar} alt="" className="w-8 h-8 rounded-full mt-1 flex-shrink-0" />
-                : <div className="w-8 h-8 rounded-full bg-[#222c5a] mt-1 flex-shrink-0 flex items-center justify-center text-xs font-bold">
+                : <div className="w-8 h-8 rounded-full bg-[var(--card-2)] mt-1 flex-shrink-0 flex items-center justify-center text-xs font-bold">
                     {group.author.slice(0, 1).toUpperCase()}
                   </div>}
               <div className={"flex flex-col gap-1 max-w-[80%] " + (isMe ? "items-end" : "items-start")}>
-                <div className={"text-[10px] text-[#9aa3c7] " + (isMe ? "text-right" : "")}>
+                <div className={"text-[10px] text-[var(--muted)] " + (isMe ? "text-right" : "")}>
                   {isMe ? "You" : group.author}
                 </div>
                 {group.items.map(m => (
@@ -181,16 +181,16 @@ export function Chat({ poolId, userId, initial }: Props) {
                     {isMe && (
                       <button
                         onClick={() => remove(m.id)}
-                        className="opacity-0 group-hover/msg:opacity-100 text-[10px] text-[#ff4d6d] transition px-1"
+                        className="opacity-0 group-hover/msg:opacity-100 text-[10px] text-[var(--crimson)] transition px-1"
                         title="Delete">×</button>
                     )}
                     <div className={"px-3 py-2 rounded-2xl text-sm break-words " +
                       (isMe
-                        ? "bg-gradient-to-br from-[#ff4d6d] to-[#ffd23f] text-[#1a1a1a] rounded-br-sm"
-                        : "bg-[#222c5a] text-white rounded-bl-sm")}>
+                        ? "bg-gradient-to-br from-[var(--crimson)] to-[var(--gold)] text-[#1a1a1a] rounded-br-sm"
+                        : "bg-[var(--card-2)] text-white rounded-bl-sm")}>
                       {m.content}
                     </div>
-                    <span className="text-[10px] text-[#9aa3c7] whitespace-nowrap">
+                    <span className="text-[10px] text-[var(--muted)] whitespace-nowrap">
                       {formatTime(m.created_at)}
                     </span>
                   </div>
@@ -201,14 +201,14 @@ export function Chat({ poolId, userId, initial }: Props) {
         })}
       </div>
 
-      <form onSubmit={send} className="border-t border-[#2a3566] p-3 flex gap-2">
+      <form onSubmit={send} className="border-t border-[var(--border)] p-3 flex gap-2">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type a message…"
           maxLength={2000}
           disabled={sending}
-          className="flex-1 bg-[#0b1020] border border-[#2a3566] rounded-full px-4 py-2 outline-none focus:border-[#ff4d6d] text-sm"
+          className="flex-1 bg-[var(--bg-2)] border border-[var(--border)] rounded-full px-4 py-2 outline-none focus:border-[var(--crimson)] text-sm"
         />
         <button
           type="submit"
@@ -217,7 +217,7 @@ export function Chat({ poolId, userId, initial }: Props) {
           {sending ? "…" : "Send"}
         </button>
       </form>
-      {err && <div className="px-3 pb-2 text-xs text-[#ff4d6d]">{err}</div>}
+      {err && <div className="px-3 pb-2 text-xs text-[var(--crimson)]">{err}</div>}
     </div>
   );
 }

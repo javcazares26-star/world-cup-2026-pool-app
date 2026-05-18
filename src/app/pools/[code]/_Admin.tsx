@@ -12,19 +12,31 @@ export type Member = {
   joined_at: string;
 };
 
-export function Admin({ pool, userId, members: initialMembers }: {
+export type OwnedPoolRef = {
+  id: string;
+  code: string;
+  name: string;
+  created_at: string;
+};
+
+export function Admin({ pool, userId, members: initialMembers, ownedPools: initialOwnedPools }: {
   pool: Pool;
   userId: string;
   members: Member[];
+  ownedPools: OwnedPoolRef[];
 }) {
   const isOwner = pool.owner_id === userId;
   const router = useRouter();
   const [members, setMembers] = useState<Member[]>(initialMembers);
+  const [ownedPools, setOwnedPools] = useState<OwnedPoolRef[]>(initialOwnedPools);
+  const [selectedPoolId, setSelectedPoolId] = useState<string>(pool.id);
   const [confirmCode, setConfirmCode] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
+
+  const selectedPool = ownedPools.find(p => p.id === selectedPoolId) ?? null;
 
   if (!isOwner) {
     return (
@@ -74,17 +86,29 @@ export function Admin({ pool, userId, members: initialMembers }: {
   }
 
   async function deletePool() {
-    if (confirmCode !== pool.code) {
-      fail(`Type "${pool.code}" exactly to confirm deletion.`);
+    if (!selectedPool) { fail("Pick a pool from the dropdown first."); return; }
+    if (confirmCode !== selectedPool.code) {
+      fail(`Type "${selectedPool.code}" exactly to confirm deletion.`);
       return;
     }
-    if (!window.confirm(`Permanently delete pool "${pool.name}"?\n\nAll picks, messages, and members will be lost. This cannot be undone.`)) return;
+    if (!window.confirm(`Permanently delete pool "${selectedPool.name}"?\n\nAll picks, messages, and members will be lost. This cannot be undone.`)) return;
     setErr(null); setBusy(true);
     const supabase = createClient();
-    const { error } = await supabase.rpc("delete_pool", { p_pool_id: pool.id });
+    const { error } = await supabase.rpc("delete_pool", { p_pool_id: selectedPool.id });
     setBusy(false);
     if (error) { fail(error.message); return; }
-    router.push("/pools");
+    // Optimistically remove the deleted pool from the local list
+    setOwnedPools(prev => prev.filter(p => p.id !== selectedPool.id));
+    setConfirmCode("");
+    // If you deleted the pool you're currently viewing, navigate away
+    if (selectedPool.id === pool.id) {
+      router.push("/pools");
+    } else {
+      flash(`Deleted "${selectedPool.name}".`);
+      // Reset dropdown to current pool
+      setSelectedPoolId(pool.id);
+      router.refresh();
+    }
   }
 
   return (
@@ -175,33 +199,60 @@ export function Admin({ pool, userId, members: initialMembers }: {
         </table>
       </div>
 
-      {/* === Danger zone === */}
+      {/* === Danger zone — delete any pool you own === */}
       <div className="card" style={{ borderColor: "var(--crimson)" }}>
-        <h2 className="font-bold text-lg text-[var(--crimson)]">⚠ Danger zone</h2>
+        <h2 className="font-bold text-lg text-[var(--crimson)]">⚠ Danger zone — delete a pool</h2>
         <p className="text-sm text-[var(--muted)] mt-1 mb-4">
-          Deleting the pool wipes all picks, messages, members, and the pool itself. There is no undo.
+          Pick any pool you own and type its code to confirm. Deleting wipes all picks, chat messages, members, and the pool itself — no undo.
         </p>
-        <div className="flex gap-2 flex-wrap items-center">
-          <input
-            value={confirmCode}
-            onChange={e => setConfirmCode(e.target.value.toUpperCase())}
-            placeholder={`Type "${pool.code}" to confirm`}
-            className="flex-1 min-w-[200px] bg-[var(--bg-2)] border border-[var(--crimson)] rounded-lg px-3 py-2 outline-none font-mono text-sm tracking-widest"
-          />
-          <button
-            onClick={deletePool}
-            disabled={busy || confirmCode !== pool.code}
-            className="btn"
-            style={{
-              background: confirmCode === pool.code ? "var(--crimson)" : "var(--card-2)",
-              color: "#fff",
-              borderColor: "var(--crimson)",
-              opacity: confirmCode === pool.code ? 1 : 0.4,
-            }}
-          >
-            Delete pool forever
-          </button>
-        </div>
+
+        {ownedPools.length === 0 ? (
+          <div className="text-sm text-[var(--muted)] italic">You don't own any pools.</div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-[var(--muted)]">Pool to delete</label>
+              <select
+                value={selectedPoolId}
+                onChange={(e) => { setSelectedPoolId(e.target.value); setConfirmCode(""); }}
+                className="w-full bg-[var(--bg-2)] border border-[var(--border)] rounded-lg px-3 py-2 mt-1 outline-none focus:border-[var(--crimson)] text-sm"
+              >
+                {ownedPools.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.code}){p.id === pool.id ? " — current" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                Type the code <span className="text-[var(--crimson)] font-mono">{selectedPool?.code ?? ""}</span> to confirm
+              </label>
+              <div className="flex gap-2 mt-1 flex-wrap">
+                <input
+                  value={confirmCode}
+                  onChange={e => setConfirmCode(e.target.value.toUpperCase())}
+                  placeholder={`Type "${selectedPool?.code ?? "CODE"}" exactly`}
+                  className="flex-1 min-w-[200px] bg-[var(--bg-2)] border border-[var(--crimson)] rounded-lg px-3 py-2 outline-none font-mono text-sm tracking-widest"
+                />
+                <button
+                  onClick={deletePool}
+                  disabled={busy || !selectedPool || confirmCode !== selectedPool?.code}
+                  className="btn"
+                  style={{
+                    background: selectedPool && confirmCode === selectedPool.code ? "var(--crimson)" : "var(--card-2)",
+                    color: "#fff",
+                    borderColor: "var(--crimson)",
+                    opacity: selectedPool && confirmCode === selectedPool.code ? 1 : 0.4,
+                  }}
+                >
+                  Delete pool forever
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
     </div>

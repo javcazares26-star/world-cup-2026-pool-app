@@ -39,16 +39,16 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
   let pointsClass = "";
   if (isFinal && pick) {
     if (pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score) {
-      pointsLabel = "+3 EXACT"; pointsClass = "bg-[#06d6a0] text-[#0a1a14]";
+      pointsLabel = "+3 EXACT"; pointsClass = "bg-[var(--pitch-light)] text-[#0a1a14]";
     } else if (Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0))) {
-      pointsLabel = "+1"; pointsClass = "bg-[#ffd23f] text-[#2a2200]";
+      pointsLabel = "+1"; pointsClass = "bg-[var(--gold)] text-[#2a2200]";
     } else {
-      pointsLabel = "0"; pointsClass = "bg-[#222c5a] text-[#9aa3c7]";
+      pointsLabel = "0"; pointsClass = "bg-[var(--card-2)] text-[var(--muted)]";
     }
   }
 
   return (
-    <div className={"px-4 py-3 border-b border-[#2a3566] last:border-b-0 " + (isLive ? "bg-[rgba(255,77,109,0.06)]" : "")}>
+    <div className={"px-4 py-3 border-b border-[var(--border)] last:border-b-0 " + (isLive ? "bg-[rgba(193,26,54,0.05)]" : "")}>
       <div className="flex justify-between items-center text-[10px] text-[var(--muted)] mb-1">
         <span className="uppercase tracking-wider">{fixture.group_label ?? fixture.round}</span>
         {isLive ? (
@@ -64,10 +64,10 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
           {fixture.home_logo && <img src={fixture.home_logo} alt="" className="w-6 h-6" />}
           <span className="font-medium text-sm truncate">{fixture.home_team}</span>
         </div>
-        <div className="flex items-center gap-1 bg-[#0b1020] border border-[#2a3566] rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-[var(--bg-2)] border border-[var(--border)] rounded-lg p-1">
           <div className="flex flex-col">
-            <button onClick={() => bump("h", 1)} disabled={!!locked} className="bg-[#222c5a] text-xs w-6 h-4 rounded hover:bg-[#ff4d6d] disabled:opacity-40">▲</button>
-            <button onClick={() => bump("h", -1)} disabled={!!locked} className="bg-[#222c5a] text-xs w-6 h-4 rounded hover:bg-[#ff4d6d] disabled:opacity-40 mt-px">▼</button>
+            <button onClick={() => bump("h", 1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40">▲</button>
+            <button onClick={() => bump("h", -1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40 mt-px">▼</button>
           </div>
           <input
             type="number" min={0} max={20} value={home}
@@ -78,7 +78,7 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
             }}
             className="w-10 h-8 bg-transparent text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
-          <span className="text-xs text-[#9aa3c7]">vs</span>
+          <span className="text-xs text-[var(--muted)]">vs</span>
           <input
             type="number" min={0} max={20} value={away}
             disabled={!!locked}
@@ -89,8 +89,8 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
             className="w-10 h-8 bg-transparent text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
           <div className="flex flex-col">
-            <button onClick={() => bump("a", 1)} disabled={!!locked} className="bg-[#222c5a] text-xs w-6 h-4 rounded hover:bg-[#ff4d6d] disabled:opacity-40">▲</button>
-            <button onClick={() => bump("a", -1)} disabled={!!locked} className="bg-[#222c5a] text-xs w-6 h-4 rounded hover:bg-[#ff4d6d] disabled:opacity-40 mt-px">▼</button>
+            <button onClick={() => bump("a", 1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40">▲</button>
+            <button onClick={() => bump("a", -1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40 mt-px">▼</button>
           </div>
         </div>
         <div className="flex items-center gap-2 justify-end min-w-0">
@@ -109,7 +109,7 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
           {pointsLabel && <span className={"px-2 py-0.5 rounded-full font-bold text-[11px] " + pointsClass}>{pointsLabel}</span>}
         </div>
       )}
-      {saved && !locked && <div className="text-[10px] text-[#06d6a0] mt-1">✓ Saved</div>}
+      {saved && !locked && <div className="text-[10px] text-[var(--pitch-light)] mt-1">✓ Saved</div>}
     </div>
   );
 }

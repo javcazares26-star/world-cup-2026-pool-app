@@ -3,23 +3,23 @@
 @tailwind utilities;
 
 :root {
-  /* === Core dark palette === */
-  --bg: #0a0e1f;
-  --bg-2: #0f1430;
-  --card: #161d3f;
-  --card-2: #1d2654;
-  --border: #2a3566;
-  --text: #f4f6ff;
-  --muted: #8c95bf;
+  /* === Core LIGHT palette === */
+  --bg: #f4f6fb;          /* page background — very light cool gray */
+  --bg-2: #ffffff;        /* input + nested bg — pure white */
+  --card: #ffffff;        /* card surface */
+  --card-2: #f0f3f9;      /* subtle section background, button surface */
+  --border: #d8dee9;      /* hairline borders */
+  --text: #1a2347;        /* deep navy — primary text */
+  --muted: #6b7591;       /* medium gray — secondary text */
 
-  /* === FIFA broadcast accents === */
-  --gold: #f4c430;          /* champagne gold — trophy, scoreboard */
-  --gold-deep: #d4a017;     /* darker gold for borders/edges */
-  --gold-light: #ffe999;    /* highlight for shimmer */
-  --pitch: #0c5b34;         /* deep emerald, like stadium grass at night */
-  --pitch-light: #1a8a4f;
-  --crimson: #d12b46;       /* broadcast red — LIVE badge, alerts */
-  --sky: #4cc9f0;           /* group letters, hyperlinks */
+  /* === FIFA broadcast accents (tuned for white bg readability) === */
+  --gold: #b8841a;        /* deeper gold, readable on white */
+  --gold-deep: #8a6212;
+  --gold-light: #fde7a8;
+  --pitch: #0a6b3a;
+  --pitch-light: #138b48;
+  --crimson: #c11a36;
+  --sky: #2477a3;
 
   /* Aliases used in older component code */
   --accent: var(--crimson);
@@ -30,13 +30,14 @@
 
 html, body {
   background:
-    /* Soccer-ball hexagon overlay (very subtle) */
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='84' height='48' viewBox='0 0 84 48'><g fill='none' stroke='%23ffffff' stroke-opacity='0.025' stroke-width='1'><polygon points='14,2 26,2 32,12 26,22 14,22 8,12'/><polygon points='42,14 54,14 60,24 54,34 42,34 36,24'/><polygon points='70,2 82,2 88,12 82,22 70,22 64,12'/><polygon points='14,26 26,26 32,36 26,46 14,46 8,36'/><polygon points='70,26 82,26 88,36 82,46 70,46 64,36'/></g></svg>"),
-    /* Pitch-green glow on the side, gold tint top */
-    radial-gradient(900px 500px at 90% 100%, rgba(12,91,52,0.22), transparent 60%),
-    radial-gradient(700px 350px at 10% 0%, rgba(244,196,48,0.06), transparent 60%),
-    radial-gradient(1100px 500px at 50% 30%, rgba(76,201,240,0.05), transparent 60%),
-    linear-gradient(180deg, var(--bg) 0%, #050818 100%);
+    /* Subtle hexagon pattern — darker now since bg is white */
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='84' height='48' viewBox='0 0 84 48'><g fill='none' stroke='%231a2347' stroke-opacity='0.05' stroke-width='1'><polygon points='14,2 26,2 32,12 26,22 14,22 8,12'/><polygon points='42,14 54,14 60,24 54,34 42,34 36,24'/><polygon points='70,2 82,2 88,12 82,22 70,22 64,12'/><polygon points='14,26 26,26 32,36 26,46 14,46 8,36'/><polygon points='70,26 82,26 88,36 82,46 70,46 64,36'/></g></svg>"),
+    /* Soft pitch-green wash bottom-right */
+    radial-gradient(900px 500px at 92% 100%, rgba(19,139,72,0.06), transparent 60%),
+    /* Soft gold wash top-left */
+    radial-gradient(700px 350px at 8% 0%, rgba(184,132,26,0.06), transparent 60%),
+    /* Base */
+    linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
   background-attachment: fixed;
   color: var(--text);
   min-height: 100vh;
@@ -53,49 +54,56 @@ html, body {
     /* USA stripes/blue */
     #b22234 66.7% 75%, #fff 75% 77%, #b22234 77% 86%, #3c3b6e 86% 100%);
   width: 100%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
 /* === Card === */
 .card {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 100%),
-    var(--card);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 20px;
   box-shadow:
-    0 12px 32px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+    0 4px 14px rgba(26,35,71,0.06),
+    0 1px 3px rgba(26,35,71,0.04);
 }
 .card.gold-border {
-  border-color: var(--gold-deep);
+  border-color: var(--gold);
   box-shadow:
-    0 12px 32px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(244,196,48,0.2),
-    inset 0 1px 0 rgba(244,196,48,0.15);
+    0 4px 14px rgba(184,132,26,0.18),
+    0 0 0 1px rgba(184,132,26,0.15);
 }
 
 /* === Buttons === */
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 10px 18px; border-radius: 10px;
-  background: var(--card-2); color: var(--text);
-  border: 1px solid var(--border); cursor: pointer;
-  font-weight: 600; transition: all 0.15s;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.15s;
+  box-shadow: 0 1px 2px rgba(26,35,71,0.04);
 }
-.btn:hover { background: var(--card); border-color: var(--gold); transform: translateY(-1px); }
+.btn:hover {
+  background: var(--card-2);
+  border-color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(26,35,71,0.1);
+}
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-deep) 100%);
-  color: #1a1408;
+  background: linear-gradient(135deg, #e3b034 0%, var(--gold) 100%);
+  color: #fff;
   border: 1px solid var(--gold-deep);
-  text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.2);
   box-shadow:
-    0 8px 20px rgba(244,196,48,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.3);
+    0 4px 12px rgba(184,132,26,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.25);
 }
 .btn-primary:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.05);
   transform: translateY(-1px);
 }
 
@@ -131,7 +139,7 @@ html, body {
   padding: 3px 8px;
   border-radius: 4px;
   text-transform: uppercase;
-  box-shadow: 0 2px 6px rgba(209,43,70,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+  box-shadow: 0 2px 6px rgba(209,43,70,0.35), inset 0 1px 0 rgba(255,255,255,0.3);
 }
 .broadcast-live::before {
   content: "";
@@ -142,27 +150,29 @@ html, body {
   animation: pulse-dot 1.2s infinite;
 }
 
-/* === Scoreboard numbers — LCD/LED feel === */
+/* === Scoreboard numbers — gold accents on light === */
 .scoreboard {
   font-family: 'Courier New', ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   font-weight: 800;
   letter-spacing: 0.05em;
-  text-shadow: 0 0 8px currentColor;
 }
-.scoreboard.gold { color: var(--gold); text-shadow: 0 0 10px rgba(244,196,48,0.5); }
+.scoreboard.gold {
+  color: var(--gold-deep);
+  text-shadow: 0 0 1px rgba(184,132,26,0.15);
+}
 
 /* === Trophy shine animation === */
 @keyframes shine {
-  0%, 100% { filter: drop-shadow(0 0 6px rgba(244,196,48,0.5)); }
-  50%      { filter: drop-shadow(0 0 18px rgba(244,196,48,0.9)); }
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(184,132,26,0.4)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(184,132,26,0.8)); }
 }
 .trophy-shine { animation: shine 2.4s ease-in-out infinite; }
 
-/* === Group section header — stadium banner feel === */
+/* === Group section header === */
 .group-banner {
   background:
-    linear-gradient(90deg, rgba(244,196,48,0.12) 0%, transparent 100%),
+    linear-gradient(90deg, rgba(184,132,26,0.08) 0%, transparent 100%),
     var(--card-2);
   border-left: 3px solid var(--gold);
   font-weight: 700;
@@ -171,6 +181,15 @@ html, body {
 }
 
 /* === Gold rank pills for leaderboard === */
-.rank-gold   { background: linear-gradient(135deg, #ffd700, #b8860b); color: #2a2200; box-shadow: 0 2px 6px rgba(218,165,32,0.4); }
-.rank-silver { background: linear-gradient(135deg, #e0e0e0, #888); color: #1a1a1a; box-shadow: 0 2px 6px rgba(160,160,160,0.4); }
-.rank-bronze { background: linear-gradient(135deg, #d4884a, #8a4d1f); color: #fff; box-shadow: 0 2px 6px rgba(139,77,31,0.4); }
+.rank-gold   { background: linear-gradient(135deg, #ffd700, #b8860b); color: #2a2200; box-shadow: 0 2px 6px rgba(218,165,32,0.35); }
+.rank-silver { background: linear-gradient(135deg, #d8d8d8, #888);    color: #1a1a1a; box-shadow: 0 2px 6px rgba(160,160,160,0.3); }
+.rank-bronze { background: linear-gradient(135deg, #d4884a, #8a4d1f); color: #fff;    box-shadow: 0 2px 6px rgba(139,77,31,0.35); }
+
+/* === Form inputs need explicit white bg + readable text === */
+input, select, textarea {
+  color: var(--text);
+}
+input::placeholder, textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}

@@ -17,7 +17,7 @@ export async function GET(req: Request, { params }: { params: { code: string } }
   const code = params.code.toUpperCase();
   const { data: pool } = await supabase.from("pools").select("id,name,code").eq("code", code).maybeSingle();
   if (!pool) {
-    return new ImageResponse(<div style={{ background: "#0b1020", color: "#fff", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>Pool not found</div>, { width: 1200, height: 630 });
+    return new ImageResponse(<div style={{ background: "var(--bg-2)", color: "#fff", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>Pool not found</div>, { width: 1200, height: 630 });
   }
 
   let title = pool.name;
@@ -43,7 +43,7 @@ export async function GET(req: Request, { params }: { params: { code: string } }
     (
       <div style={{
         width: "100%", height: "100%",
-        background: "linear-gradient(135deg, #ff4d6d 0%, #ffd23f 100%)",
+        background: "linear-gradient(135deg, var(--crimson) 0%, var(--gold) 100%)",
         display: "flex", flexDirection: "column", justifyContent: "space-between",
         padding: 60, color: "#1a1a1a",
         fontFamily: "system-ui, -apple-system, sans-serif",

@@ -68,7 +68,7 @@ export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
 
   if (groups.length === 0) {
     return (
-      <div className="card text-center text-[#9aa3c7]">
+      <div className="card text-center text-[var(--muted)]">
         No groups loaded yet. Once fixtures sync, group standings appear here.
       </div>
     );
@@ -78,7 +78,7 @@ export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
     <div>
       <div className="card mb-4">
         <h2 className="text-lg font-bold mb-1">Group standings — live</h2>
-        <p className="text-sm text-[#9aa3c7]">
+        <p className="text-sm text-[var(--muted)]">
           Updates automatically as match results come in. Top 2 in each group + 8 best 3rd-place
           teams advance to the Round of 32. Sorted by Points → Goal Difference → Goals For.
         </p>
@@ -90,13 +90,13 @@ export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
           const anyPlayed = rows.some(r => r.mp > 0);
           return (
             <div key={group} className="card !p-0 overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#2a3566] flex items-center justify-between">
-                <h3 className="text-xs uppercase tracking-widest text-[#4cc9f0]">{group}</h3>
-                {!anyPlayed && <span className="text-[10px] text-[#9aa3c7]">No matches played yet</span>}
+              <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
+                <h3 className="text-xs uppercase tracking-widest text-[var(--sky)]">{group}</h3>
+                {!anyPlayed && <span className="text-[10px] text-[var(--muted)]">No matches played yet</span>}
               </div>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-[10px] uppercase tracking-wider text-[#9aa3c7]">
+                  <tr className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
                     <th className="text-left p-2 pl-3">#</th>
                     <th className="text-left p-2">Team</th>
                     <th className="text-center p-2" title="Matches Played">MP</th>
@@ -116,29 +116,29 @@ export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
                     const bg = isQualified
                       ? "bg-[rgba(6,214,160,0.06)]"
                       : isThirdPlace
-                        ? "bg-[rgba(255,210,63,0.04)]"
+                        ? "bg-[rgba(244,196,48,0.04)]"
                         : "";
                     return (
-                      <tr key={r.team} className={"border-t border-[#2a3566] " + bg}>
+                      <tr key={r.team} className={"border-t border-[var(--border)] " + bg}>
                         <td className="p-2 pl-3">
                           <span className={"inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold " +
-                            (isQualified ? "bg-[#06d6a0] text-[#0a1a14]"
-                              : isThirdPlace ? "bg-[#ffd23f] text-[#2a2200]"
-                              : "bg-[#222c5a] text-[#9aa3c7]")}>
+                            (isQualified ? "bg-[var(--pitch-light)] text-[#0a1a14]"
+                              : isThirdPlace ? "bg-[var(--gold)] text-[#2a2200]"
+                              : "bg-[var(--card-2)] text-[var(--muted)]")}>
                             {i + 1}
                           </span>
                         </td>
                         <td className="p-2 font-medium">{r.team}</td>
                         <td className="p-2 text-center">{r.mp}</td>
-                        <td className="p-2 text-center text-[#06d6a0]">{r.w}</td>
+                        <td className="p-2 text-center text-[var(--pitch-light)]">{r.w}</td>
                         <td className="p-2 text-center">{r.d}</td>
-                        <td className="p-2 text-center text-[#ff4d6d]">{r.l}</td>
+                        <td className="p-2 text-center text-[var(--crimson)]">{r.l}</td>
                         <td className="p-2 text-center">{r.gf}</td>
                         <td className="p-2 text-center">{r.ga}</td>
                         <td className="p-2 text-center font-mono text-xs">
                           {r.gd > 0 ? "+" + r.gd : r.gd}
                         </td>
-                        <td className="p-2 pr-3 text-center font-bold text-[#ffd23f]">{r.pts}</td>
+                        <td className="p-2 pr-3 text-center font-bold text-[var(--gold)]">{r.pts}</td>
                       </tr>
                     );
                   })}
@@ -150,13 +150,13 @@ export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
       </div>
 
       <div className="card mt-4 !py-3">
-        <div className="flex gap-4 flex-wrap text-xs text-[#9aa3c7]">
+        <div className="flex gap-4 flex-wrap text-xs text-[var(--muted)]">
           <span className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#06d6a0]"></span>
+            <span className="inline-block w-3 h-3 rounded-sm bg-[var(--pitch-light)]"></span>
             Top 2 → Round of 32 (direct)
           </span>
           <span className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-sm bg-[#ffd23f]"></span>
+            <span className="inline-block w-3 h-3 rounded-sm bg-[var(--gold)]"></span>
             3rd place → competes for 8 best-3rd slots
           </span>
         </div>

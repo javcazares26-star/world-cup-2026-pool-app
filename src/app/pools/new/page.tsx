@@ -42,22 +42,22 @@ export default function NewPoolPage() {
       <h1 className="text-2xl font-bold mb-4">Create a pool</h1>
       <form onSubmit={submit} className="card flex flex-col gap-4">
         <div>
-          <label className="text-xs uppercase tracking-wider text-[#9aa3c7]">Pool name</label>
+          <label className="text-xs uppercase tracking-wider text-[var(--muted)]">Pool name</label>
           <input
             value={name} onChange={e => setName(e.target.value)} required
             placeholder="Cazares Family Cup"
-            className="w-full bg-[#0b1020] border border-[#2a3566] rounded-lg px-3 py-2 mt-1 outline-none focus:border-[#ff4d6d]"
+            className="w-full bg-[var(--bg-2)] border border-[var(--border)] rounded-lg px-3 py-2 mt-1 outline-none focus:border-[var(--crimson)]"
           />
         </div>
         <div>
-          <label className="text-xs uppercase tracking-wider text-[#9aa3c7]">Invite code (optional)</label>
+          <label className="text-xs uppercase tracking-wider text-[var(--muted)]">Invite code (optional)</label>
           <input
             value={code} onChange={e => setCode(e.target.value.toUpperCase())}
             placeholder="auto-generated if blank"
-            className="w-full bg-[#0b1020] border border-[#2a3566] rounded-lg px-3 py-2 mt-1 font-mono uppercase tracking-widest outline-none focus:border-[#ff4d6d]"
+            className="w-full bg-[var(--bg-2)] border border-[var(--border)] rounded-lg px-3 py-2 mt-1 font-mono uppercase tracking-widest outline-none focus:border-[var(--crimson)]"
           />
         </div>
-        {err && <div className="text-sm text-[#ff4d6d]">{err}</div>}
+        {err && <div className="text-sm text-[var(--crimson)]">{err}</div>}
         <button disabled={busy || !name} className="btn btn-primary justify-center">
           {busy ? "Creating…" : "Create pool"}
         </button>
