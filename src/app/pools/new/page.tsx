@@ -1,14 +1,27 @@
 "use client";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function NewPoolPage() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const router = useRouter();
+
+  // Check admin status on mount; redirect non-admins out
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.rpc("is_super_admin").then(({ data }) => {
+      if (data === true) setIsAdmin(true);
+      else {
+        setIsAdmin(false);
+        setTimeout(() => router.push("/pools"), 1500);
+      }
+    });
+  }, [router]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,6 +48,26 @@ export default function NewPoolPage() {
       // Fallback: pool exists, we just can't read it back yet — go to list.
       router.push("/pools");
     }
+  }
+
+  if (isAdmin === false) {
+    return (
+      <main className="max-w-md mx-auto p-6 mt-12">
+        <div className="card text-center">
+          <div className="text-4xl mb-2">🔒</div>
+          <h2 className="text-xl font-bold">Admin only</h2>
+          <p className="text-sm text-[var(--muted)] mt-2">Only the platform admin can create pools. Redirecting…</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (isAdmin === null) {
+    return (
+      <main className="max-w-md mx-auto p-6 mt-12">
+        <div className="card text-center text-[var(--muted)]">Checking access…</div>
+      </main>
+    );
   }
 
   return (

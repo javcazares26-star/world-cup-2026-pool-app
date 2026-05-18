@@ -17,6 +17,10 @@ export default async function PoolsListPage() {
 
   const pools = (memberships ?? []).map((m: any) => m.pool).filter(Boolean);
 
+  // Check if this user is the platform admin
+  const { data: isAdminData } = await supabase.rpc("is_super_admin");
+  const isAdmin = isAdminData === true;
+
   return (
     <main className="max-w-3xl mx-auto p-6">
       <header className="flex justify-between items-center mb-6">
@@ -30,7 +34,11 @@ export default async function PoolsListPage() {
         <div className="card text-center">
           <div className="text-5xl">🏆</div>
           <h2 className="text-xl font-bold mt-3">You're not in any pool yet</h2>
-          <p className="text-[var(--muted)] text-sm mt-2">Create your own pool, or join one with a friend's code.</p>
+          <p className="text-[var(--muted)] text-sm mt-2">
+            {isAdmin
+              ? "Create your own pool, or join one with a code."
+              : "Ask the pool admin to share an invite code with you, then enter it below to join."}
+          </p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -46,8 +54,12 @@ export default async function PoolsListPage() {
         </div>
       )}
 
-      <div className="grid sm:grid-cols-2 gap-3 mt-8">
-        <Link href="/pools/new" className="btn btn-primary justify-center">+ Create a pool</Link>
+      <div className={"grid gap-3 mt-8 " + (isAdmin ? "sm:grid-cols-2" : "sm:grid-cols-1")}>
+        {isAdmin && (
+          <Link href="/pools/new" className="btn btn-primary justify-center">
+            + Create a pool <span className="text-xs opacity-70 ml-1">(admin)</span>
+          </Link>
+        )}
         <JoinPoolForm />
       </div>
     </main>
