@@ -7,6 +7,7 @@ import { Leaderboard } from "./_Leaderboard";
 import { Kpis } from "./_Kpis";
 import { FairPlay } from "./_FairPlay";
 import { Chat } from "./_Chat";
+import { Admin, type Member } from "./_Admin";
 import type { Message } from "@/lib/types";
 
 type Props = {
@@ -16,10 +17,12 @@ type Props = {
   myPicks: Pick[];
   leaderboard: LeaderboardRow[];
   messages: Message[];
+  members: Member[];
   initialTab: string;
 };
 
-export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: initialPicks, leaderboard: initialLb, messages: initialMessages, initialTab }: Props) {
+export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: initialPicks, leaderboard: initialLb, messages: initialMessages, members: initialMembers, initialTab }: Props) {
+  const isOwner = pool.owner_id === userId;
   const [tab, setTab] = useState(initialTab);
   const [fixtures, setFixtures] = useState(initialFixtures);
   const [picks, setPicks] = useState(initialPicks);
@@ -105,13 +108,14 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       <Kpis stats={myStats} rank={myRank} live={liveCount} />
 
       <nav className="card !p-1.5 flex gap-1 my-4 overflow-x-auto">
-        {[
+        {([
           ["picks", "📝 Picks"],
           ["live", "📺 Live"],
           ["fairplay", "📊 FairPlay"],
           ["leaderboard", "🥇 Leaderboard"],
           ["chat", "💬 Chat"],
-        ].map(([id, label]) => (
+          ...(isOwner ? [["admin", "⚙️ Admin"]] : []),
+        ] as [string, string][]).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}
             className={"px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-1 min-w-max " +
               (tab === id
@@ -167,6 +171,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
 
       {tab === "chat" && (
         <Chat poolId={pool.id} userId={userId} initial={initialMessages} />
+      )}
+
+      {tab === "admin" && isOwner && (
+        <Admin pool={pool} userId={userId} members={initialMembers} />
       )}
     </>
   );

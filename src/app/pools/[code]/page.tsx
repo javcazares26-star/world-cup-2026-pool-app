@@ -22,7 +22,7 @@ export default async function PoolPage({
   // Auto-join if not a member yet (so a shareable URL just works).
   await supabase.rpc("join_pool_by_code", { pool_code: code });
 
-  const [{ data: fixtures }, { data: myPicks }, { data: leaderboard }, { data: rawMessages }] = await Promise.all([
+  const [{ data: fixtures }, { data: myPicks }, { data: leaderboard }, { data: rawMessages }, { data: rawMembers }] = await Promise.all([
     supabase.from("fixtures").select("*").order("kickoff_utc"),
     supabase.from("picks").select("*").eq("pool_id", pool.id).eq("user_id", user.id),
     supabase.from("v_leaderboard").select("*").eq("pool_id", pool.id),
@@ -31,6 +31,10 @@ export default async function PoolPage({
       .eq("pool_id", pool.id)
       .order("created_at", { ascending: true })
       .limit(200),
+    supabase.from("pool_members")
+      .select("user_id,role,joined_at,profiles(display_name,avatar_url)")
+      .eq("pool_id", pool.id)
+      .order("joined_at"),
   ]);
 
   // Flatten profile join into the Message shape the client expects
@@ -41,6 +45,15 @@ export default async function PoolPage({
     content: m.content,
     created_at: m.created_at,
     display_name: m.profiles?.display_name,
+    avatar_url: m.profiles?.avatar_url ?? null,
+  }));
+
+  // Flatten members for the Admin tab
+  const members = (rawMembers ?? []).map((m: any) => ({
+    user_id: m.user_id,
+    role: m.role,
+    joined_at: m.joined_at,
+    display_name: m.profiles?.display_name ?? "Player",
     avatar_url: m.profiles?.avatar_url ?? null,
   }));
 
@@ -73,6 +86,7 @@ export default async function PoolPage({
         myPicks={myPicks ?? []}
         leaderboard={leaderboard ?? []}
         messages={messages}
+        members={members}
         initialTab={tab}
       />
     </main>
