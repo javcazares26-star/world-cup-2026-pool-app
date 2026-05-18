@@ -3,13 +3,16 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "World Cup 2026 Pool",
-  description: "Pick scores. Earn points. Win bragging rights.",
+  description: "Pick scores. Earn points. Win bragging rights. Canada · Mexico · USA 2026.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="host-flag-strip" aria-hidden />
+        {children}
+      </body>
     </html>
   );
 }

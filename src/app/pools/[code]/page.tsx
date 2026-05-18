@@ -48,12 +48,19 @@ export default async function PoolPage({
 
   return (
     <main className="max-w-5xl mx-auto p-4 sm:p-6">
-      <header className="flex justify-between items-start gap-4 flex-wrap mb-4">
+      <header className="flex justify-between items-start gap-4 flex-wrap mb-6">
         <div>
-          <Link href="/pools" className="text-xs text-[#9aa3c7] hover:text-white">← Your pools</Link>
-          <h1 className="text-2xl sm:text-3xl font-bold mt-1">{pool.name}</h1>
-          <div className="text-xs text-[#9aa3c7] font-mono mt-1">
-            Invite code: <span className="text-[#ffd23f]">{pool.code}</span>
+          <Link href="/pools" className="text-xs text-[var(--muted)] hover:text-white inline-flex items-center gap-1">
+            ← Your pools
+          </Link>
+          <div className="flex items-baseline gap-3 mt-2 flex-wrap">
+            <span className="text-3xl trophy-shine">🏆</span>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{pool.name}</h1>
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--muted)] mt-2 flex items-center gap-3">
+            <span>Canada · México · USA 2026</span>
+            <span className="text-[var(--border)]">|</span>
+            <span>Invite code <span className="text-[var(--gold)] font-mono font-bold tracking-widest">{pool.code}</span></span>
           </div>
         </div>
         <ShareBar code={pool.code} name={pool.name} />

@@ -20,10 +20,10 @@ export function Leaderboard({ rows, meId }: { rows: LeaderboardRow[]; meId: stri
           )}
           {rows.map((r, i) => {
             const me = r.user_id === meId;
-            const rankClass = i === 0 ? "bg-gradient-to-br from-[#ffd700] to-[#f0a300] text-[#2a2200]"
-              : i === 1 ? "bg-gradient-to-br from-[#c0c0c0] to-[#888] text-[#1a1a1a]"
-              : i === 2 ? "bg-gradient-to-br from-[#cd7f32] to-[#8a4d1f] text-white"
-              : "bg-[#222c5a]";
+            const rankClass = i === 0 ? "rank-gold"
+              : i === 1 ? "rank-silver"
+              : i === 2 ? "rank-bronze"
+              : "bg-[var(--card-2)]";
             return (
               <tr key={r.user_id} className={"border-t border-[#2a3566] " + (me ? "bg-[rgba(255,210,63,0.08)]" : "")}>
                 <td className="p-3">

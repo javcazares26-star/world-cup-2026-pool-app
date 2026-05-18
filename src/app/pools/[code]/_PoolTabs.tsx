@@ -126,7 +126,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.entries(grouped).map(([group, ms]) => (
             <div key={group} className="card !p-0 overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#2a3566] text-xs uppercase tracking-widest text-[#4cc9f0]">
+              <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
                 {group}
               </div>
               {ms.map(m => (

@@ -49,11 +49,15 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
 
   return (
     <div className={"px-4 py-3 border-b border-[#2a3566] last:border-b-0 " + (isLive ? "bg-[rgba(255,77,109,0.06)]" : "")}>
-      <div className="flex justify-between text-[10px] text-[#9aa3c7] mb-1">
-        <span>{fixture.group_label ?? fixture.round}</span>
-        {isLive ? <span className="live-dot text-[#ff4d6d] font-bold">{fixture.minute ?? ""}' LIVE</span>
-          : isFinal ? <span className="text-[#06d6a0] font-bold">FINAL</span>
-          : <span>{ko.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>}
+      <div className="flex justify-between items-center text-[10px] text-[var(--muted)] mb-1">
+        <span className="uppercase tracking-wider">{fixture.group_label ?? fixture.round}</span>
+        {isLive ? (
+          <span className="broadcast-live">{fixture.minute != null ? `${fixture.minute}'` : ""} LIVE</span>
+        ) : isFinal ? (
+          <span className="text-[var(--pitch-light)] font-bold tracking-widest">FT</span>
+        ) : (
+          <span>{ko.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+        )}
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
         <div className="flex items-center gap-2 min-w-0">
@@ -95,9 +99,12 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
         </div>
       </div>
       {(showActual || isFinal || isLive) && (fixture.home_score !== null) && (
-        <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-[#2a3566] text-xs">
-          <span className="text-[#9aa3c7]">
-            Score: <span className="text-[#ffd23f] font-bold">{fixture.home_score} – {fixture.away_score}</span>
+        <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-[var(--border)] text-xs">
+          <span className="text-[var(--muted)]">
+            Score:&nbsp;
+            <span className="scoreboard gold text-base">
+              {fixture.home_score} – {fixture.away_score}
+            </span>
           </span>
           {pointsLabel && <span className={"px-2 py-0.5 rounded-full font-bold text-[11px] " + pointsClass}>{pointsLabel}</span>}
         </div>
