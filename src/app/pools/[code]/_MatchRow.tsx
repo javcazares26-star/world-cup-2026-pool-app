@@ -9,19 +9,35 @@ type Props = {
   onSave: (fixtureId: number, home: number, away: number) => void;
 };
 
+const LOCK_LEAD_MS = 5 * 60 * 1000; // picks lock 5 minutes before kickoff
+
 export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
   const [home, setHome] = useState(pick?.home_pick ?? 0);
   const [away, setAway] = useState(pick?.away_pick ?? 0);
   const [saved, setSaved] = useState(false);
+  // Tick re-renders the row every 15s so the countdown stays fresh
+  const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
     if (pick) { setHome(pick.home_pick); setAway(pick.away_pick); }
   }, [pick]);
 
-  const locked = pick?.locked || (fixture.status_short && fixture.status_short !== "NS");
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 15000);
+    return () => clearInterval(id);
+  }, []);
+
+  const ko = new Date(fixture.kickoff_utc);
+  const koMs = ko.getTime();
+  const msUntilLock = koMs - LOCK_LEAD_MS - now;
   const isLive = ["1H","2H","ET","LIVE","HT","BT","P"].includes(fixture.status_short ?? "");
   const isFinal = ["FT","AET","PEN"].includes(fixture.status_short ?? "");
-  const ko = new Date(fixture.kickoff_utc);
+  const isLockedByTime = msUntilLock <= 0;
+  const locked = pick?.locked || (fixture.status_short && fixture.status_short !== "NS") || isLockedByTime;
+
+  // Show a countdown only when within 30 minutes of the lock cutoff
+  const showCountdown = !locked && msUntilLock > 0 && msUntilLock < 30 * 60 * 1000;
+  const countdownLabel = showCountdown ? formatCountdown(msUntilLock) : null;
 
   function bump(side: "h"|"a", d: number) {
     if (locked) return;
@@ -55,6 +71,10 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
           <span className="broadcast-live">{fixture.minute != null ? `${fixture.minute}'` : ""} LIVE</span>
         ) : isFinal ? (
           <span className="text-[var(--pitch-light)] font-bold tracking-widest">FT</span>
+        ) : isLockedByTime ? (
+          <span className="text-[var(--crimson)] font-bold tracking-widest">🔒 LOCKED</span>
+        ) : countdownLabel ? (
+          <span className="text-[var(--crimson)] font-bold">⏱ Locks in {countdownLabel}</span>
         ) : (
           <span>{ko.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
         )}
@@ -112,4 +132,17 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
       {saved && !locked && <div className="text-[10px] text-[var(--pitch-light)] mt-1">✓ Saved</div>}
     </div>
   );
+}
+
+function formatCountdown(ms: number): string {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  if (m >= 60) {
+    const h = Math.floor(m / 60);
+    const rem = m % 60;
+    return `${h}h ${rem}m`;
+  }
+  if (m >= 5) return `${m}m`;
+  return `${m}m ${String(s).padStart(2, "0")}s`;
 }

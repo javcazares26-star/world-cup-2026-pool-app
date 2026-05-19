@@ -57,17 +57,19 @@ export async function GET(req: Request) {
       if (error) throw error;
     }
 
-    // Lock picks for any fixture whose kickoff has passed.
-    const nowIso = new Date().toISOString();
-    const { data: startedFixtures } = await supabase
-      .from("fixtures").select("id").lte("kickoff_utc", nowIso);
-    const startedIds = (startedFixtures ?? []).map((r: any) => r.id);
-    if (startedIds.length) {
+    // Lock picks for any fixture within 5 minutes of kickoff (or already past).
+    // RLS also enforces this server-side, but flipping the locked column gives
+    // the UI an authoritative flag without re-querying time.
+    const lockThresholdIso = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    const { data: lockableFixtures } = await supabase
+      .from("fixtures").select("id").lte("kickoff_utc", lockThresholdIso);
+    const lockableIds = (lockableFixtures ?? []).map((r: any) => r.id);
+    if (lockableIds.length) {
       await supabase
         .from("picks")
         .update({ locked: true })
         .eq("locked", false)
-        .in("fixture_id", startedIds);
+        .in("fixture_id", lockableIds);
     }
 
     return NextResponse.json({ ok: true, count: upserted.length, mode });
