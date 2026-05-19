@@ -66,7 +66,7 @@ const ALL_TEAMS: TeamMeta[] = [
   // ===== Group G =====
   { group: "Group G", team: "Belgium",        flag: "🇧🇪", searchName: "Belgium" },
   { group: "Group G", team: "Egypt",          flag: "🇪🇬", searchName: "Egypt" },
-  { group: "Group G", team: "IR Iran",        flag: "🇮🇷", searchName: "Iran" },
+  { group: "Group G", team: "Iran",           flag: "🇮🇷", searchName: "Iran" },
   { group: "Group G", team: "New Zealand",    flag: "🇳🇿", searchName: "New Zealand" },
 
   // ===== Group H =====
