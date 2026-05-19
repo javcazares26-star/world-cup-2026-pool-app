@@ -113,7 +113,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
         {([
           ["picks", "📝 Picks"],
           ["live", "📺 Live"],
-          ["fairplay", "📊 FairPlay"],
+          ["fairplay", "📊 Groups Live"],
           ["teams", "🧑‍🤝‍🧑 Teams"],
           ["leaderboard", "🥇 Leaderboard"],
           ["chat", "💬 Chat"],
