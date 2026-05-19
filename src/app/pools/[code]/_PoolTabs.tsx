@@ -9,6 +9,7 @@ import { FairPlay } from "./_FairPlay";
 import { Chat } from "./_Chat";
 import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Teams } from "./_Teams";
+import { Members } from "./_Members";
 import type { Message } from "@/lib/types";
 
 type Props = {
@@ -115,6 +116,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           ["live", "📺 Live"],
           ["fairplay", "📊 Groups Live"],
           ["teams", "🧑‍🤝‍🧑 Teams"],
+          ["members", "👥 Members"],
           ["leaderboard", "🥇 Leaderboard"],
           ["chat", "💬 Chat"],
           ...(isOwner ? [["admin", "⚙️ Admin"]] : []),
@@ -170,6 +172,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
 
       {tab === "teams" && (
         <Teams fixtures={fixtures} />
+      )}
+
+      {tab === "members" && (
+        <Members userId={userId} members={initialMembers} />
       )}
 
       {tab === "leaderboard" && (

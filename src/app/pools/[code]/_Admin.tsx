@@ -8,6 +8,7 @@ export type Member = {
   user_id: string;
   display_name: string;
   avatar_url: string | null;
+  location: string | null;
   role: string;
   joined_at: string;
 };
