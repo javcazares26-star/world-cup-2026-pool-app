@@ -11,7 +11,7 @@
 --   * FIFA 1 → DR Congo
 --   * FIFA 2 → Iraq
 --   * South Korea → Rep. of Korea
---   * Iran → IR Iran
+--   * Iran (formerly IR Iran in spreadsheet)
 --   * Venues: host city names (e.g. "Mexico City", "Los Angeles")
 --
 -- Run in Supabase SQL Editor: paste, click Run.
@@ -42,7 +42,7 @@ INSERT INTO public.fixtures (
 (900012, 1, 2026, 'Group Stage - 1', 'Group F', '2026-06-15 04:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Sweden', NULL, NULL, 'Tunisia', NULL, NULL, NULL, 'Monterrey', 'Monterrey'),
 (900013, 1, 2026, 'Group Stage - 1', 'Group H', '2026-06-16 00:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Saudi Arabia', NULL, NULL, 'Uruguay', NULL, NULL, NULL, 'Miami', 'Miami'),
 (900014, 1, 2026, 'Group Stage - 1', 'Group H', '2026-06-15 18:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Spain', NULL, NULL, 'Cape Verde', NULL, NULL, NULL, 'Atlanta', 'Atlanta'),
-(900015, 1, 2026, 'Group Stage - 1', 'Group G', '2026-06-16 03:00:00+00', 'Not Started', 'NS', NULL, NULL, 'IR Iran', NULL, NULL, 'New Zealand', NULL, NULL, NULL, 'Los Angeles', 'Los Angeles'),
+(900015, 1, 2026, 'Group Stage - 1', 'Group G', '2026-06-16 03:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Iran', NULL, NULL, 'New Zealand', NULL, NULL, NULL, 'Los Angeles', 'Los Angeles'),
 (900016, 1, 2026, 'Group Stage - 1', 'Group G', '2026-06-15 21:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Belgium', NULL, NULL, 'Egypt', NULL, NULL, NULL, 'Seattle', 'Seattle'),
 (900017, 1, 2026, 'Group Stage - 1', 'Group I', '2026-06-16 21:00:00+00', 'Not Started', 'NS', NULL, NULL, 'France', NULL, NULL, 'Senegal', NULL, NULL, NULL, 'New York/New Jersey', 'New York/New Jersey'),
 (900018, 1, 2026, 'Group Stage - 1', 'Group I', '2026-06-17 00:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Iraq', NULL, NULL, 'Norway', NULL, NULL, NULL, 'Boston', 'Boston'),
@@ -66,7 +66,7 @@ INSERT INTO public.fixtures (
 (900036, 1, 2026, 'Group Stage - 2', 'Group F', '2026-06-21 06:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Tunisia', NULL, NULL, 'Japan', NULL, NULL, NULL, 'Monterrey', 'Monterrey'),
 (900037, 1, 2026, 'Group Stage - 2', 'Group H', '2026-06-22 00:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Uruguay', NULL, NULL, 'Cape Verde', NULL, NULL, NULL, 'Miami', 'Miami'),
 (900038, 1, 2026, 'Group Stage - 2', 'Group H', '2026-06-21 18:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Spain', NULL, NULL, 'Saudi Arabia', NULL, NULL, NULL, 'Atlanta', 'Atlanta'),
-(900039, 1, 2026, 'Group Stage - 2', 'Group G', '2026-06-21 21:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Belgium', NULL, NULL, 'IR Iran', NULL, NULL, NULL, 'Los Angeles', 'Los Angeles'),
+(900039, 1, 2026, 'Group Stage - 2', 'Group G', '2026-06-21 21:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Belgium', NULL, NULL, 'Iran', NULL, NULL, NULL, 'Los Angeles', 'Los Angeles'),
 (900040, 1, 2026, 'Group Stage - 2', 'Group G', '2026-06-22 03:00:00+00', 'Not Started', 'NS', NULL, NULL, 'New Zealand', NULL, NULL, 'Egypt', NULL, NULL, NULL, 'Vancouver', 'Vancouver'),
 (900041, 1, 2026, 'Group Stage - 2', 'Group I', '2026-06-23 02:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Norway', NULL, NULL, 'Senegal', NULL, NULL, NULL, 'New York/New Jersey', 'New York/New Jersey'),
 (900042, 1, 2026, 'Group Stage - 2', 'Group I', '2026-06-22 23:00:00+00', 'Not Started', 'NS', NULL, NULL, 'France', NULL, NULL, 'Iraq', NULL, NULL, NULL, 'Philadelphia', 'Philadelphia'),
@@ -90,7 +90,7 @@ INSERT INTO public.fixtures (
 (900060, 1, 2026, 'Group Stage - 3', 'Group D', '2026-06-26 04:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Paraguay', NULL, NULL, 'Australia', NULL, NULL, NULL, 'San Francisco Bay Area', 'San Francisco Bay Area'),
 (900061, 1, 2026, 'Group Stage - 3', 'Group I', '2026-06-26 21:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Norway', NULL, NULL, 'France', NULL, NULL, NULL, 'Boston', 'Boston'),
 (900062, 1, 2026, 'Group Stage - 3', 'Group I', '2026-06-26 21:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Senegal', NULL, NULL, 'Iraq', NULL, NULL, NULL, 'Toronto', 'Toronto'),
-(900063, 1, 2026, 'Group Stage - 3', 'Group G', '2026-06-27 05:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Egypt', NULL, NULL, 'IR Iran', NULL, NULL, NULL, 'Seattle', 'Seattle'),
+(900063, 1, 2026, 'Group Stage - 3', 'Group G', '2026-06-27 05:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Egypt', NULL, NULL, 'Iran', NULL, NULL, NULL, 'Seattle', 'Seattle'),
 (900064, 1, 2026, 'Group Stage - 3', 'Group G', '2026-06-27 05:00:00+00', 'Not Started', 'NS', NULL, NULL, 'New Zealand', NULL, NULL, 'Belgium', NULL, NULL, NULL, 'Vancouver', 'Vancouver'),
 (900065, 1, 2026, 'Group Stage - 3', 'Group H', '2026-06-27 02:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Cape Verde', NULL, NULL, 'Saudi Arabia', NULL, NULL, NULL, 'Houston', 'Houston'),
 (900066, 1, 2026, 'Group Stage - 3', 'Group H', '2026-06-27 02:00:00+00', 'Not Started', 'NS', NULL, NULL, 'Uruguay', NULL, NULL, 'Spain', NULL, NULL, NULL, 'Guadalajara', 'Guadalajara'),
