@@ -15,12 +15,16 @@ export default async function PoolPage({
 
   const code = params.code.toUpperCase();
 
+  // Auto-join FIRST. The RPC is SECURITY DEFINER so it bypasses RLS to look
+  // the pool up by code. If the pool exists, the caller is added as a member,
+  // which makes the SELECT below visible to them under the pool RLS policy.
+  // If the pool doesn't exist, the RPC raises an exception (caught here),
+  // and the SELECT will return null → notFound().
+  await supabase.rpc("join_pool_by_code", { pool_code: code });
+
   const { data: pool } = await supabase
     .from("pools").select("*").eq("code", code).maybeSingle();
   if (!pool) notFound();
-
-  // Auto-join if not a member yet (so a shareable URL just works).
-  await supabase.rpc("join_pool_by_code", { pool_code: code });
 
   const [
     { data: fixtures },
