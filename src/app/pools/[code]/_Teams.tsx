@@ -6,7 +6,7 @@ type Player = {
   id: string;
   name: string;
   position: string | null;
-  cutout: string | null;   // player image (prefer cutout, fallback to thumb)
+  cutout: string | null;
   number?: string | null;
 };
 
@@ -14,77 +14,101 @@ type TeamMeta = {
   group: string;
   team: string;
   flag: string;
-  searchName: string;       // name to search on TheSportsDB
+  searchName: string;     // name used to search TheSportsDB
+  sportsdbId?: string;    // optional known TheSportsDB id (bypasses search ambiguity)
 };
 
-// === Country flag emojis for the 48 qualified teams ===
-const FLAGS: Record<string, string> = {
-  "Mexico": "🇲🇽", "South Africa": "🇿🇦", "Rep. of Korea": "🇰🇷", "Czech Rep.": "🇨🇿",
-  "Canada": "🇨🇦", "Bosnia/Herzeg.": "🇧🇦", "Qatar": "🇶🇦", "Switzerland": "🇨🇭",
-  "Brazil": "🇧🇷", "Morocco": "🇲🇦", "Haiti": "🇭🇹", "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
-  "USA": "🇺🇸", "Paraguay": "🇵🇾", "Australia": "🇦🇺", "Turkey": "🇹🇷",
-  "Germany": "🇩🇪", "Curaçao": "🇨🇼", "Ivory Coast": "🇨🇮", "Ecuador": "🇪🇨",
-  "Netherlands": "🇳🇱", "Japan": "🇯🇵", "Sweden": "🇸🇪", "Tunisia": "🇹🇳",
-  "Belgium": "🇧🇪", "Egypt": "🇪🇬", "IR Iran": "🇮🇷", "New Zealand": "🇳🇿",
-  "Spain": "🇪🇸", "Cape Verde": "🇨🇻", "Saudi Arabia": "🇸🇦", "Uruguay": "🇺🇾",
-  "France": "🇫🇷", "Senegal": "🇸🇳", "Iraq": "🇮🇶", "Norway": "🇳🇴",
-  "Argentina": "🇦🇷", "Algeria": "🇩🇿", "Austria": "🇦🇹", "Jordan": "🇯🇴",
-  "Portugal": "🇵🇹", "DR Congo": "🇨🇩", "Uzbekistan": "🇺🇿", "Colombia": "🇨🇴",
-  "England": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Croatia": "🇭🇷", "Ghana": "🇬🇭", "Panama": "🇵🇦",
-};
+/* ===========================================================================
+ * Canonical 48-team roster for the 2026 World Cup.
+ * Hardcoded so the Teams tab works even if the fixtures table hasn't fully synced.
+ * Group letters and team names match the official December 2025 draw.
+ *
+ * sportsdbId fields are TheSportsDB's idTeam for the national team. When present,
+ * we skip search and look up directly — eliminates ambiguity. Add as you verify.
+ * =========================================================================== */
+const ALL_TEAMS: TeamMeta[] = [
+  // ===== Group A =====
+  { group: "Group A", team: "Mexico",         flag: "🇲🇽", searchName: "Mexico", sportsdbId: "133713" },
+  { group: "Group A", team: "South Africa",   flag: "🇿🇦", searchName: "South Africa" },
+  { group: "Group A", team: "Rep. of Korea",  flag: "🇰🇷", searchName: "South Korea" },
+  { group: "Group A", team: "Czech Rep.",     flag: "🇨🇿", searchName: "Czech Republic" },
 
-// === Map our team names to TheSportsDB's preferred names ===
-const SPORTSDB_NAME: Record<string, string> = {
-  "Rep. of Korea": "South Korea",
-  "Czech Rep.": "Czech Republic",
-  "Bosnia/Herzeg.": "Bosnia and Herzegovina",
-  "IR Iran": "Iran",
-  "USA": "United States",
-  "Cape Verde": "Cape Verde Islands",
-  "DR Congo": "DR Congo",
-  "Curaçao": "Curacao",
-};
+  // ===== Group B =====
+  { group: "Group B", team: "Canada",         flag: "🇨🇦", searchName: "Canada" },
+  { group: "Group B", team: "Bosnia/Herzeg.", flag: "🇧🇦", searchName: "Bosnia and Herzegovina" },
+  { group: "Group B", team: "Qatar",          flag: "🇶🇦", searchName: "Qatar" },
+  { group: "Group B", team: "Switzerland",    flag: "🇨🇭", searchName: "Switzerland" },
 
-function sportsdbName(team: string): string {
-  return SPORTSDB_NAME[team] ?? team;
-}
+  // ===== Group C =====
+  { group: "Group C", team: "Brazil",         flag: "🇧🇷", searchName: "Brazil",      sportsdbId: "133706" },
+  { group: "Group C", team: "Morocco",        flag: "🇲🇦", searchName: "Morocco" },
+  { group: "Group C", team: "Haiti",          flag: "🇭🇹", searchName: "Haiti" },
+  { group: "Group C", team: "Scotland",       flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿", searchName: "Scotland" },
+
+  // ===== Group D =====
+  { group: "Group D", team: "USA",            flag: "🇺🇸", searchName: "United States", sportsdbId: "133731" },
+  { group: "Group D", team: "Paraguay",       flag: "🇵🇾", searchName: "Paraguay" },
+  { group: "Group D", team: "Australia",      flag: "🇦🇺", searchName: "Australia" },
+  { group: "Group D", team: "Turkey",         flag: "🇹🇷", searchName: "Turkey" },
+
+  // ===== Group E =====
+  { group: "Group E", team: "Germany",        flag: "🇩🇪", searchName: "Germany",     sportsdbId: "133673" },
+  { group: "Group E", team: "Curaçao",        flag: "🇨🇼", searchName: "Curacao" },
+  { group: "Group E", team: "Ivory Coast",    flag: "🇨🇮", searchName: "Ivory Coast" },
+  { group: "Group E", team: "Ecuador",        flag: "🇪🇨", searchName: "Ecuador" },
+
+  // ===== Group F =====
+  { group: "Group F", team: "Netherlands",    flag: "🇳🇱", searchName: "Netherlands" },
+  { group: "Group F", team: "Japan",          flag: "🇯🇵", searchName: "Japan" },
+  { group: "Group F", team: "Sweden",         flag: "🇸🇪", searchName: "Sweden" },
+  { group: "Group F", team: "Tunisia",        flag: "🇹🇳", searchName: "Tunisia" },
+
+  // ===== Group G =====
+  { group: "Group G", team: "Belgium",        flag: "🇧🇪", searchName: "Belgium" },
+  { group: "Group G", team: "Egypt",          flag: "🇪🇬", searchName: "Egypt" },
+  { group: "Group G", team: "IR Iran",        flag: "🇮🇷", searchName: "Iran" },
+  { group: "Group G", team: "New Zealand",    flag: "🇳🇿", searchName: "New Zealand" },
+
+  // ===== Group H =====
+  { group: "Group H", team: "Spain",          flag: "🇪🇸", searchName: "Spain",        sportsdbId: "133698" },
+  { group: "Group H", team: "Cape Verde",     flag: "🇨🇻", searchName: "Cape Verde Islands" },
+  { group: "Group H", team: "Saudi Arabia",   flag: "🇸🇦", searchName: "Saudi Arabia" },
+  { group: "Group H", team: "Uruguay",        flag: "🇺🇾", searchName: "Uruguay" },
+
+  // ===== Group I =====
+  { group: "Group I", team: "France",         flag: "🇫🇷", searchName: "France",       sportsdbId: "133699" },
+  { group: "Group I", team: "Senegal",        flag: "🇸🇳", searchName: "Senegal" },
+  { group: "Group I", team: "Iraq",           flag: "🇮🇶", searchName: "Iraq" },
+  { group: "Group I", team: "Norway",         flag: "🇳🇴", searchName: "Norway" },
+
+  // ===== Group J =====
+  { group: "Group J", team: "Argentina",      flag: "🇦🇷", searchName: "Argentina",    sportsdbId: "133697" },
+  { group: "Group J", team: "Algeria",        flag: "🇩🇿", searchName: "Algeria" },
+  { group: "Group J", team: "Austria",        flag: "🇦🇹", searchName: "Austria" },
+  { group: "Group J", team: "Jordan",         flag: "🇯🇴", searchName: "Jordan" },
+
+  // ===== Group K =====
+  { group: "Group K", team: "Portugal",       flag: "🇵🇹", searchName: "Portugal",     sportsdbId: "133690" },
+  { group: "Group K", team: "DR Congo",       flag: "🇨🇩", searchName: "DR Congo" },
+  { group: "Group K", team: "Uzbekistan",     flag: "🇺🇿", searchName: "Uzbekistan" },
+  { group: "Group K", team: "Colombia",       flag: "🇨🇴", searchName: "Colombia" },
+
+  // ===== Group L =====
+  { group: "Group L", team: "England",        flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", searchName: "England", sportsdbId: "133657" },
+  { group: "Group L", team: "Croatia",        flag: "🇭🇷", searchName: "Croatia" },
+  { group: "Group L", team: "Ghana",          flag: "🇬🇭", searchName: "Ghana" },
+  { group: "Group L", team: "Panama",         flag: "🇵🇦", searchName: "Panama" },
+];
 
 export function Teams({ fixtures }: { fixtures: Fixture[] }) {
-  // Derive 48 unique teams from the fixtures table, grouped A-L
-  const teams = useMemo<TeamMeta[]>(() => {
-    const set = new Map<string, TeamMeta>();
-    fixtures.forEach(f => {
-      if (!f.group_label) return;
-      [f.home_team, f.away_team].forEach(team => {
-        const key = `${f.group_label}|${team}`;
-        if (!set.has(key)) {
-          set.set(key, {
-            group: f.group_label!,
-            team,
-            flag: FLAGS[team] ?? "🏳️",
-            searchName: sportsdbName(team),
-          });
-        }
-      });
-    });
-    return Array.from(set.values()).sort((a, b) =>
-      a.group.localeCompare(b.group) || a.team.localeCompare(b.team)
-    );
-  }, [fixtures]);
-
   const [openTeam, setOpenTeam] = useState<string | null>(null);
 
-  if (teams.length === 0) {
-    return (
-      <div className="card text-center text-[var(--muted)]">
-        Teams will appear here once fixtures sync.
-      </div>
-    );
-  }
-
-  // Group teams by their group label for the visual layout
-  const byGroup: Record<string, TeamMeta[]> = {};
-  teams.forEach(t => { (byGroup[t.group] ??= []).push(t); });
+  // Group teams by group letter
+  const byGroup = useMemo(() => {
+    const out: Record<string, TeamMeta[]> = {};
+    ALL_TEAMS.forEach(t => { (out[t.group] ??= []).push(t); });
+    return out;
+  }, []);
 
   return (
     <div>
@@ -92,6 +116,9 @@ export function Teams({ fixtures }: { fixtures: Fixture[] }) {
         <h2 className="font-bold text-lg mb-1">Participating teams</h2>
         <p className="text-sm text-[var(--muted)]">
           All 48 teams in the 2026 FIFA World Cup. Click any team to see their squad.
+        </p>
+        <p className="text-[10px] text-[var(--muted)] mt-2 opacity-70">
+          Player photos from TheSportsDB (community-edited). Coverage and accuracy vary by team — biggest national sides like Argentina, Brazil, France, England, Germany, Mexico, USA have the most complete data.
         </p>
       </div>
 
@@ -111,7 +138,6 @@ export function Teams({ fixtures }: { fixtures: Fixture[] }) {
                 />
               ))}
             </div>
-            {/* Squad expansion (shows below the 4-team row when one is selected) */}
             {groupTeams.some(t => t.team === openTeam) && (
               <Squad
                 team={groupTeams.find(t => t.team === openTeam)!}
@@ -159,21 +185,45 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
 
     async function load() {
       try {
-        // 1. Look up the team by name
-        const teamRes = await fetch(
-          `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(team.searchName)}`
-        );
-        const teamJson = await teamRes.json();
-        const teamObj = (teamJson.teams ?? []).find((t: any) =>
-          (t.strSport ?? "").toLowerCase() === "soccer"
-        );
-        if (!teamObj) {
-          if (!cancelled) { setErr("Squad data not available yet for this team."); setLoading(false); }
-          return;
+        let teamId = team.sportsdbId;
+
+        // If we don't have a known ID, search and filter to international team
+        if (!teamId) {
+          const teamRes = await fetch(
+            `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(team.searchName)}`
+          );
+          const teamJson = await teamRes.json();
+          const candidates = teamJson.teams ?? [];
+
+          // Prefer soccer national teams. Look for telltales: league "International",
+          // description mentioning "national team", or stadium with national context.
+          const isLikelyNational = (t: any) => {
+            const sport = (t.strSport ?? "").toLowerCase();
+            if (sport !== "soccer") return false;
+            const league = (t.strLeague ?? "").toLowerCase();
+            const desc = (t.strDescriptionEN ?? "").toLowerCase();
+            return league.includes("international")
+                || league.includes("world cup")
+                || desc.includes("national team")
+                || desc.includes("national football")
+                || /\b(senior|national)\b/.test(desc);
+          };
+
+          const national = candidates.find(isLikelyNational);
+          const fallbackSoccer = candidates.find((t: any) =>
+            (t.strSport ?? "").toLowerCase() === "soccer"
+          );
+          const teamObj = national || fallbackSoccer;
+          if (!teamObj) {
+            if (!cancelled) { setErr("notfound"); setLoading(false); }
+            return;
+          }
+          teamId = teamObj.idTeam;
         }
-        // 2. Get all players for that team
+
+        // Fetch all players for that team
         const playersRes = await fetch(
-          `https://www.thesportsdb.com/api/v1/json/3/lookup_all_players.php?id=${teamObj.idTeam}`
+          `https://www.thesportsdb.com/api/v1/json/3/lookup_all_players.php?id=${teamId}`
         );
         const playersJson = await playersRes.json();
         const raw = playersJson.player ?? [];
@@ -183,10 +233,10 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
             id: p.idPlayer,
             name: p.strPlayer,
             position: p.strPosition ?? null,
+            // Prefer cutout (transparent bg), fall back to thumb
             cutout: p.strCutout || p.strThumb || null,
             number: p.strNumber ?? null,
           }))
-          // Sort: by jersey number if present, then name
           .sort((a: Player, b: Player) => {
             const an = parseInt(a.number ?? "999", 10);
             const bn = parseInt(b.number ?? "999", 10);
@@ -195,12 +245,12 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
           });
         if (!cancelled) { setPlayers(mapped); setLoading(false); }
       } catch (e: any) {
-        if (!cancelled) { setErr("Could not load squad. Check your connection."); setLoading(false); }
+        if (!cancelled) { setErr("network"); setLoading(false); }
       }
     }
     load();
     return () => { cancelled = true; };
-  }, [team.searchName]);
+  }, [team.searchName, team.sportsdbId]);
 
   return (
     <div className="border-t border-[var(--border)] bg-[var(--card-2)] p-4">
@@ -218,21 +268,26 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
         <div className="text-center py-6 text-sm text-[var(--muted)]">Loading squad…</div>
       )}
 
-      {err && (
+      {err === "notfound" && (
         <div className="text-center py-6 text-sm text-[var(--muted)]">
-          {err}
+          Squad data not available yet for {team.team}.
           <div className="text-[10px] mt-1 opacity-70">
-            Player photos come from TheSportsDB. National team rosters vary in coverage.
+            TheSportsDB (our free data source) doesn't have a national team entry for this country yet.
+            We'll show photos once they're added — or switch to API-Football for fuller coverage.
           </div>
+        </div>
+      )}
+
+      {err === "network" && (
+        <div className="text-center py-6 text-sm text-[var(--muted)]">
+          Couldn't reach TheSportsDB. Check your connection and try again.
         </div>
       )}
 
       {players && players.length > 0 && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {players.map(p => (
-              <PlayerCard key={p.id} player={p} />
-            ))}
+            {players.map(p => <PlayerCard key={p.id} player={p} />)}
           </div>
           <div className="text-[10px] text-[var(--muted)] mt-3 text-right">
             {players.length} player{players.length === 1 ? "" : "s"} · photos via TheSportsDB
@@ -242,7 +297,7 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
 
       {players && players.length === 0 && !err && (
         <div className="text-center py-6 text-sm text-[var(--muted)]">
-          No players listed yet for this team.
+          No players listed yet for this team on TheSportsDB.
         </div>
       )}
     </div>
