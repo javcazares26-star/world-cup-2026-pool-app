@@ -15,6 +15,8 @@ function LoginContent() {
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        // Always show Google's account picker — prevents silent reuse of the previously signed-in account
+        queryParams: { prompt: "select_account" },
       },
     });
   }
