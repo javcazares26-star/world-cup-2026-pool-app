@@ -1,26 +1,29 @@
 "use client";
 import { useMemo } from "react";
-import type { Fixture } from "@/lib/types";
+import type { Fixture, Pick } from "@/lib/types";
 
 type Standing = {
   team: string;
-  mp: number;  // matches played
-  w: number;   // wins
-  d: number;   // draws
-  l: number;   // losses
-  gf: number;  // goals for
-  ga: number;  // goals against
-  gd: number;  // goal difference
-  pts: number; // points
+  mp: number;  // matches played (or projected)
+  w: number;
+  d: number;
+  l: number;
+  gf: number;
+  ga: number;
+  gd: number;
+  pts: number;
 };
 
-export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
-  // Compute standings per group, only counting finished matches
-  const standingsByGroup = useMemo(() => {
-    const result: Record<string, Standing[]> = {};
-    const finishedStatuses = new Set(["FT", "AET", "PEN"]);
+export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick[] }) {
+  const finishedStatuses = new Set(["FT", "AET", "PEN"]);
 
-    // Collect teams per group (from any fixture in that group)
+  // === Compute standings: prefer real scores when match is finished; else use the user's pick ===
+  const { standingsByGroup, finishedCount, projectedCount } = useMemo(() => {
+    const result: Record<string, Standing[]> = {};
+    let finished = 0;
+    let projected = 0;
+
+    // Initialize all teams in each group
     const teamsByGroup: Record<string, Set<string>> = {};
     fixtures.forEach(f => {
       if (!f.group_label) return;
@@ -28,23 +31,40 @@ export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
       teamsByGroup[f.group_label].add(f.home_team);
       teamsByGroup[f.group_label].add(f.away_team);
     });
-
-    // Initialize standings
     Object.entries(teamsByGroup).forEach(([group, teams]) => {
       result[group] = Array.from(teams).map(t => ({
         team: t, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0,
       }));
     });
 
-    // Walk every finished match and accumulate stats
+    // Index picks by fixture_id for quick lookup
+    const pickByFixture = new Map<number, Pick>();
+    picks.forEach(p => pickByFixture.set(p.fixture_id, p));
+
+    // Apply each group-stage fixture
     fixtures.forEach(f => {
       if (!f.group_label) return;
-      if (!finishedStatuses.has(f.status_short ?? "")) return;
-      const h = f.home_score ?? 0;
-      const a = f.away_score ?? 0;
+      const isFinished = finishedStatuses.has(f.status_short ?? "");
+
+      let h: number | null = null;
+      let a: number | null = null;
+
+      if (isFinished && f.home_score !== null && f.away_score !== null) {
+        h = f.home_score; a = f.away_score;
+        finished++;
+      } else {
+        const pick = pickByFixture.get(f.id);
+        if (pick) {
+          h = pick.home_pick; a = pick.away_pick;
+          projected++;
+        }
+      }
+      if (h === null || a === null) return;  // unfinished + no pick → don't count
+
       const homeRow = result[f.group_label].find(r => r.team === f.home_team);
       const awayRow = result[f.group_label].find(r => r.team === f.away_team);
       if (!homeRow || !awayRow) return;
+
       homeRow.mp++; awayRow.mp++;
       homeRow.gf += h; homeRow.ga += a;
       awayRow.gf += a; awayRow.ga += h;
@@ -55,14 +75,13 @@ export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
       else { homeRow.d++; awayRow.d++; homeRow.pts++; awayRow.pts++; }
     });
 
-    // Sort each group: pts desc, GD desc, GF desc, team name asc
     Object.values(result).forEach(rows => {
       rows.sort((x, y) =>
         y.pts - x.pts || y.gd - x.gd || y.gf - x.gf || x.team.localeCompare(y.team)
       );
     });
-    return result;
-  }, [fixtures]);
+    return { standingsByGroup: result, finishedCount: finished, projectedCount: projected };
+  }, [fixtures, picks]);
 
   const groups = Object.keys(standingsByGroup).sort();
 
@@ -74,25 +93,42 @@ export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
     );
   }
 
+  const totalCounted = finishedCount + projectedCount;
+  const isMostlySimulation = projectedCount > finishedCount;
+
   return (
     <div>
       <div className="card mb-4">
-        <h2 className="text-lg font-bold mb-1">Group standings — live</h2>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
+          <h2 className="text-lg font-bold">Group standings</h2>
+          <span className={"text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full " +
+            (isMostlySimulation
+              ? "bg-[var(--gold)] text-[#1a1408]"
+              : "bg-[var(--pitch-light)] text-white")}>
+            {isMostlySimulation ? "🔮 Simulation" : "📡 Live results"}
+          </span>
+        </div>
         <p className="text-sm text-[var(--muted)]">
-          Updates automatically as match results come in. Top 2 in each group + 8 best 3rd-place
-          teams advance to the Round of 32. Sorted by Points → Goal Difference → Goals For.
+          {isMostlySimulation ? (
+            <>Showing projected standings based on <strong>your picks</strong>. Once a match is finished, real scores replace your prediction in the calculation.</>
+          ) : (
+            <>Standings calculated from real match results. Picks not yet played are filled in with your predictions.</>
+          )}
+        </p>
+        <p className="text-[10px] text-[var(--muted)] mt-2 opacity-80">
+          {finishedCount} finished match{finishedCount === 1 ? "" : "es"} · {projectedCount} projected from your picks · Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {groups.map(group => {
           const rows = standingsByGroup[group];
-          const anyPlayed = rows.some(r => r.mp > 0);
+          const anyCounted = rows.some(r => r.mp > 0);
           return (
             <div key={group} className="card !p-0 overflow-hidden">
               <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
                 <h3 className="text-xs uppercase tracking-widest text-[var(--sky)]">{group}</h3>
-                {!anyPlayed && <span className="text-[10px] text-[var(--muted)]">No matches played yet</span>}
+                {!anyCounted && <span className="text-[10px] text-[var(--muted)]">Make picks to see projected standings</span>}
               </div>
               <table className="w-full text-sm">
                 <thead>
@@ -111,8 +147,8 @@ export function FairPlay({ fixtures }: { fixtures: Fixture[] }) {
                 </thead>
                 <tbody>
                   {rows.map((r, i) => {
-                    const isQualified = i < 2;            // top 2 advance directly
-                    const isThirdPlace = i === 2;          // best-3rd-place candidates
+                    const isQualified = i < 2;
+                    const isThirdPlace = i === 2;
                     const bg = isQualified
                       ? "bg-[rgba(6,214,160,0.06)]"
                       : isThirdPlace

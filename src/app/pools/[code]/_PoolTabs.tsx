@@ -132,8 +132,18 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       </nav>
 
       {tab === "picks" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {Object.entries(grouped).map(([group, ms]) => (
+        <>
+          <div className="card mb-4 border-l-4" style={{ borderLeftColor: "var(--crimson)" }}>
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              🔒 Pool rule — picks lock 5 minutes before kickoff
+            </h3>
+            <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+              Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. The lock icon and countdown next to each match show when it's about to close.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(grouped).map(([group, ms]) => (
             <div key={group} className="card !p-0 overflow-hidden">
               <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
                 {group}
@@ -143,12 +153,13 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               ))}
             </div>
           ))}
-          {fixtures.length === 0 && (
-            <div className="card col-span-2 text-center">
-              <p className="text-[var(--muted)]">Fixtures haven't synced yet. The cron will populate them within 5 minutes after deploy. You can also hit <code>/api/cron/sync-fixtures?secret=…&amp;mode=full</code> manually.</p>
-            </div>
-          )}
-        </div>
+            {fixtures.length === 0 && (
+              <div className="card col-span-2 text-center">
+                <p className="text-[var(--muted)]">Fixtures haven't synced yet. The cron will populate them within 5 minutes after deploy. You can also hit <code>/api/cron/sync-fixtures?secret=…&amp;mode=full</code> manually.</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {tab === "live" && (
@@ -167,7 +178,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       )}
 
       {tab === "fairplay" && (
-        <FairPlay fixtures={fixtures} />
+        <FairPlay fixtures={fixtures} picks={picks} />
       )}
 
       {tab === "teams" && (
