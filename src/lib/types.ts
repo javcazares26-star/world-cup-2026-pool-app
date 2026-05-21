@@ -4,6 +4,10 @@ export type Fixture = {
   season: number;
   round: string | null;
   group_label: string | null;
+  match_id: string | null;
+  is_knockout: boolean;
+  qualified_team_home: string | null;
+  qualified_team_away: string | null;
   kickoff_utc: string;
   status: string;
   status_short: string | null;
