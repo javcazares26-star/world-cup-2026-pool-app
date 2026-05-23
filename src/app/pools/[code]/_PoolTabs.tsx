@@ -10,6 +10,7 @@ import { Chat } from "./_Chat";
 import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Teams } from "./_Teams";
 import { Members } from "./_Members";
+import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import type { Message } from "@/lib/types";
 
 type Props = {
@@ -208,6 +209,12 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
               🏆 Knockout Stage
             </h2>
+
+            {/* 3rd Place Standings */}
+            <div className="mb-6">
+              <ThirdPlaceStandings fixtures={fixtures} picks={picks} />
+            </div>
+
             <div className="space-y-4">
               {Object.entries(groupedByStage.elim)
                 .sort(([a], [b]) => {
