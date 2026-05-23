@@ -42,12 +42,15 @@ function deriveGroupLabel(round: string | null): string | null {
 
 export function normalize(af: AFFixture): FixtureUpsert {
   const status = af.fixture.status.short;
+  const groupLabel = deriveGroupLabel(af.league.round);
+  const isKnockout = groupLabel === null && af.league.round !== null;
+
   return {
     id: af.fixture.id,
     league_id: af.league.id,
     season: af.league.season,
     round: af.league.round,
-    group_label: deriveGroupLabel(af.league.round),
+    group_label: groupLabel,
     kickoff_utc: af.fixture.date,
     status: af.fixture.status.long,
     status_short: status,
@@ -62,6 +65,10 @@ export function normalize(af: AFFixture): FixtureUpsert {
     away_score: af.goals.away,
     venue: af.fixture.venue.name,
     city: af.fixture.venue.city,
+    match_id: null,
+    qualified_team_home: null,
+    qualified_team_away: null,
+    is_knockout: isKnockout,
   };
 }
 
