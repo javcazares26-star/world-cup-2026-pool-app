@@ -211,8 +211,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             <div className="space-y-4">
               {Object.entries(groupedByStage.elim)
                 .sort(([a], [b]) => {
-                  const order = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "3RD PLACE FINAL", "Final"];
-                  return order.indexOf(a) - order.indexOf(b);
+                  const order = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "3RD PLACE FINAL", "3rd Place Final", "Final"];
+                  const aIdx = order.findIndex(o => o.toUpperCase() === (a ?? "").toUpperCase());
+                  const bIdx = order.findIndex(o => o.toUpperCase() === (b ?? "").toUpperCase());
+                  return (aIdx >= 0 ? aIdx : 999) - (bIdx >= 0 ? bIdx : 999);
                 })
                 .map(([round, ms]) => (
                 <div key={round} className="card !p-0 overflow-hidden">
