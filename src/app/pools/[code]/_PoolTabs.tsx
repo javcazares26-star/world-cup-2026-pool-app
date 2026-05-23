@@ -211,7 +211,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             <div className="space-y-4">
               {Object.entries(groupedByStage.elim)
                 .sort(([a], [b]) => {
-                  const order = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final"];
+                  const order = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "3RD PLACE FINAL", "Final"];
                   return order.indexOf(a) - order.indexOf(b);
                 })
                 .map(([round, ms]) => (
