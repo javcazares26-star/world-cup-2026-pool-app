@@ -27,6 +27,7 @@ type Props = {
 export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: initialPicks, leaderboard: initialLb, messages: initialMessages, members: initialMembers, ownedPools, initialTab }: Props) {
   const isOwner = pool.owner_id === userId;
   const [tab, setTab] = useState(initialTab);
+  const [picksStage, setPicksStage] = useState<"groups" | "knockout">("groups");
   const [fixtures, setFixtures] = useState(initialFixtures);
   const [picks, setPicks] = useState(initialPicks);
   const [leaderboard, setLeaderboard] = useState(initialLb);
@@ -153,7 +154,30 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             </p>
           </div>
 
+          {/* STAGE TOGGLE */}
+          <div className="card !p-2 flex gap-2 mb-4">
+            <button
+              onClick={() => setPicksStage("groups")}
+              className={"px-4 py-2 rounded-lg text-sm font-semibold transition-colors " +
+                (picksStage === "groups"
+                  ? "bg-[var(--gold)] text-[#1a1a1a]"
+                  : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]")}
+            >
+              📋 Groups Stage
+            </button>
+            <button
+              onClick={() => setPicksStage("knockout")}
+              className={"px-4 py-2 rounded-lg text-sm font-semibold transition-colors " +
+                (picksStage === "knockout"
+                  ? "bg-[var(--gold)] text-[#1a1a1a]"
+                  : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]")}
+            >
+              🏆 Knockout Stage
+            </button>
+          </div>
+
           {/* GROUPS STAGE SECTION */}
+          {picksStage === "groups" && (
           <div className="mb-6">
             <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
               📋 Groups Stage
@@ -176,8 +200,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               )}
             </div>
           </div>
+          )}
 
           {/* KNOCKOUT STAGE SECTION */}
+          {picksStage === "knockout" && (
           <div>
             <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
               🏆 Knockout Stage
@@ -208,6 +234,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               )}
             </div>
           </div>
+          )}
         </>
       )}
 
