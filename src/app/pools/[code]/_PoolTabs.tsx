@@ -61,15 +61,27 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
     return () => { supabase.removeChannel(ch); };
   }, [pool.id]);
 
-  // ====== Group fixtures ======
-  const grouped = useMemo(() => {
-    const out: Record<string, Fixture[]> = {};
-    fixtures.forEach(f => {
-      const key = f.group_label || f.round || "Knockout";
-      (out[key] ??= []).push(f);
+  // ====== Group fixtures — separate by stage ======
+  const groupStageFixtures = useMemo(() => fixtures.filter(f => f.group_label), [fixtures]);
+  const eliminationFixtures = useMemo(() => fixtures.filter(f => !f.group_label), [fixtures]);
+
+  // Group fixtures by label (Groups) or round (Elimination)
+  const groupedByStage = useMemo(() => {
+    const groups: Record<string, Fixture[]> = {};
+    const elim: Record<string, Fixture[]> = {};
+
+    groupStageFixtures.forEach(f => {
+      const key = f.group_label || "Other";
+      (groups[key] ??= []).push(f);
     });
-    return out;
-  }, [fixtures]);
+
+    eliminationFixtures.forEach(f => {
+      const key = f.round || "Knockout";
+      (elim[key] ??= []).push(f);
+    });
+
+    return { groups, elim };
+  }, [groupStageFixtures, eliminationFixtures]);
 
   const liveCount = fixtures.filter(f => f.status_short === "1H" || f.status_short === "2H" || f.status_short === "LIVE").length;
 
@@ -113,7 +125,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       <nav className="card !p-1.5 flex gap-1 my-4 overflow-x-auto">
         {([
           ["picks", "📝 Picks"],
-          ["live", "📺 Live"],
           ["fairplay", "📊 Groups Live"],
           ["teams", "🧑‍🤝‍🧑 Teams"],
           ["members", "👥 Members"],
@@ -138,44 +149,68 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               🔒 Pool rule — picks lock 5 minutes before kickoff
             </h3>
             <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
-              Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. The lock icon and countdown next to each match show when it's about to close.
+              Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. See your picks and live scores in the same place.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(grouped).map(([group, ms]) => (
-            <div key={group} className="card !p-0 overflow-hidden">
-              <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
-                {group}
+          {/* GROUPS STAGE SECTION */}
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
+              📋 Groups Stage
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(groupedByStage.groups).map(([group, ms]) => (
+              <div key={group} className="card !p-0 overflow-hidden">
+                <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
+                  {group}
+                </div>
+                {ms.map(m => (
+                  <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore />
+                ))}
               </div>
-              {ms.map(m => (
-                <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} />
-              ))}
+            ))}
+              {groupStageFixtures.length === 0 && (
+                <div className="card col-span-2 text-center">
+                  <p className="text-[var(--muted)]">Group stage fixtures haven't synced yet. The cron will populate them within 5 minutes after deploy.</p>
+                </div>
+              )}
             </div>
-          ))}
-            {fixtures.length === 0 && (
-              <div className="card col-span-2 text-center">
-                <p className="text-[var(--muted)]">Fixtures haven't synced yet. The cron will populate them within 5 minutes after deploy. You can also hit <code>/api/cron/sync-fixtures?secret=…&amp;mode=full</code> manually.</p>
-              </div>
-            )}
+          </div>
+
+          {/* KNOCKOUT STAGE SECTION */}
+          <div>
+            <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
+              🏆 Knockout Stage
+            </h2>
+            <div className="space-y-4">
+              {Object.entries(groupedByStage.elim)
+                .sort(([a], [b]) => {
+                  const order = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final"];
+                  return order.indexOf(a) - order.indexOf(b);
+                })
+                .map(([round, ms]) => (
+                <div key={round} className="card !p-0 overflow-hidden">
+                  <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
+                    {round}
+                  </div>
+                  <div className="space-y-0">
+                    {ms.sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime())
+                      .map(m => (
+                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore />
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {eliminationFixtures.length === 0 && (
+                <div className="card text-center">
+                  <p className="text-[var(--muted)]">Knockout fixtures will appear after the group stage. Check back when they're available!</p>
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
 
-      {tab === "live" && (
-        <div className="grid gap-3">
-          {fixtures.filter(f => f.status_short !== "NS").sort((a,b) =>
-            new Date(b.kickoff_utc).getTime() - new Date(a.kickoff_utc).getTime()
-          ).map(m => (
-            <div key={m.id} className="card !p-0 overflow-hidden">
-              <MatchRow fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showActual />
-            </div>
-          ))}
-          {fixtures.every(f => f.status_short === "NS") && (
-            <div className="card text-center text-[var(--muted)]">Nothing live yet. Check back during match windows.</div>
-          )}
-        </div>
-      )}
 
       {tab === "fairplay" && (
         <FairPlay fixtures={fixtures} picks={picks} />

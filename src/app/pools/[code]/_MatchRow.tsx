@@ -6,12 +6,13 @@ type Props = {
   fixture: Fixture;
   pick?: Pick;
   showActual?: boolean;
+  showScore?: boolean;
   onSave: (fixtureId: number, home: number, away: number) => void;
 };
 
 const LOCK_LEAD_MS = 5 * 60 * 1000; // picks lock 5 minutes before kickoff
 
-export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
+export function MatchRow({ fixture, pick, showActual, showScore, onSave }: Props) {
   const [home, setHome] = useState(pick?.home_pick ?? 0);
   const [away, setAway] = useState(pick?.away_pick ?? 0);
   const [saved, setSaved] = useState(false);
@@ -63,10 +64,21 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
     }
   }
 
+  const isKnockout = !fixture.group_label;
+
   return (
     <div className={"px-4 py-3 border-b border-[var(--border)] last:border-b-0 " + (isLive ? "bg-[rgba(193,26,54,0.05)]" : "")}>
       <div className="flex justify-between items-center text-[10px] text-[var(--muted)] mb-1">
-        <span className="uppercase tracking-wider">{fixture.group_label ?? fixture.round}</span>
+        <div className="flex items-center gap-2">
+          <span className="uppercase tracking-wider">
+            {fixture.group_label ?? fixture.round}
+          </span>
+          {isKnockout && fixture.match_id && (
+            <span className="px-2 py-0.5 rounded-full bg-[var(--card-2)] font-bold text-[var(--gold)]">
+              {fixture.match_id}
+            </span>
+          )}
+        </div>
         {isLive ? (
           <span className="broadcast-live">{fixture.minute != null ? `${fixture.minute}'` : ""} LIVE</span>
         ) : isFinal ? (
@@ -79,56 +91,81 @@ export function MatchRow({ fixture, pick, showActual, onSave }: Props) {
           <span>{ko.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
         )}
       </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
-        <div className="flex items-center gap-2 min-w-0">
-          {fixture.home_logo && <img src={fixture.home_logo} alt="" className="w-6 h-6" />}
-          <span className="font-medium text-sm truncate">{fixture.home_team}</span>
-        </div>
-        <div className="flex items-center gap-1 bg-[var(--bg-2)] border border-[var(--border)] rounded-lg p-1">
-          <div className="flex flex-col">
-            <button onClick={() => bump("h", 1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40">▲</button>
-            <button onClick={() => bump("h", -1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40 mt-px">▼</button>
-          </div>
-          <input
-            type="number" min={0} max={20} value={home}
-            disabled={!!locked}
-            onChange={(e) => {
-              const v = Math.max(0, Math.min(20, parseInt(e.target.value || "0", 10)));
-              setHome(v); onSave(fixture.id, v, away);
-            }}
-            className="w-10 h-8 bg-transparent text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-          <span className="text-xs text-[var(--muted)]">vs</span>
-          <input
-            type="number" min={0} max={20} value={away}
-            disabled={!!locked}
-            onChange={(e) => {
-              const v = Math.max(0, Math.min(20, parseInt(e.target.value || "0", 10)));
-              setAway(v); onSave(fixture.id, home, v);
-            }}
-            className="w-10 h-8 bg-transparent text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-          />
-          <div className="flex flex-col">
-            <button onClick={() => bump("a", 1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40">▲</button>
-            <button onClick={() => bump("a", -1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40 mt-px">▼</button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 justify-end min-w-0">
-          <span className="font-medium text-sm truncate text-right">{fixture.away_team}</span>
-          {fixture.away_logo && <img src={fixture.away_logo} alt="" className="w-6 h-6" />}
-        </div>
-      </div>
-      {(showActual || isFinal || isLive) && (fixture.home_score !== null) && (
-        <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-[var(--border)] text-xs">
-          <span className="text-[var(--muted)]">
-            Score:&nbsp;
-            <span className="scoreboard gold text-base">
-              {fixture.home_score} – {fixture.away_score}
-            </span>
-          </span>
-          {pointsLabel && <span className={"px-2 py-0.5 rounded-full font-bold text-[11px] " + pointsClass}>{pointsLabel}</span>}
+      {isKnockout && (fixture.qualified_team_home || fixture.qualified_team_away) && (
+        <div className="text-[9px] text-[var(--muted)] mb-2 tracking-wide">
+          {fixture.qualified_team_home ?? "?"} vs {fixture.qualified_team_away ?? "?"}
         </div>
       )}
+      <div className={showScore ? "space-y-2" : ""}>
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
+          <div className="flex items-center gap-2 min-w-0">
+            {fixture.home_logo && <img src={fixture.home_logo} alt="" className="w-6 h-6" />}
+            <span className="font-medium text-sm truncate">{fixture.home_team}</span>
+          </div>
+          <div className="flex items-center gap-1 bg-[var(--bg-2)] border border-[var(--border)] rounded-lg p-1">
+            <div className="flex flex-col">
+              <button onClick={() => bump("h", 1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40">▲</button>
+              <button onClick={() => bump("h", -1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40 mt-px">▼</button>
+            </div>
+            <input
+              type="number" min={0} max={20} value={home}
+              disabled={!!locked}
+              onChange={(e) => {
+                const v = Math.max(0, Math.min(20, parseInt(e.target.value || "0", 10)));
+                setHome(v); onSave(fixture.id, v, away);
+              }}
+              className="w-10 h-8 bg-transparent text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <span className="text-xs text-[var(--muted)]">vs</span>
+            <input
+              type="number" min={0} max={20} value={away}
+              disabled={!!locked}
+              onChange={(e) => {
+                const v = Math.max(0, Math.min(20, parseInt(e.target.value || "0", 10)));
+                setAway(v); onSave(fixture.id, home, v);
+              }}
+              className="w-10 h-8 bg-transparent text-center font-bold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <div className="flex flex-col">
+              <button onClick={() => bump("a", 1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40">▲</button>
+              <button onClick={() => bump("a", -1)} disabled={!!locked} className="bg-[var(--card-2)] text-xs w-6 h-4 rounded hover:bg-[var(--crimson)] disabled:opacity-40 mt-px">▼</button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 justify-end min-w-0">
+            <span className="font-medium text-sm truncate text-right">{fixture.away_team}</span>
+            {fixture.away_logo && <img src={fixture.away_logo} alt="" className="w-6 h-6" />}
+          </div>
+        </div>
+
+        {/* Real-time score display side-by-side with picks */}
+        {showScore && (fixture.home_score !== null || fixture.away_score !== null) && (
+          <div className="flex justify-between items-center px-1 text-xs">
+            <div className="text-[var(--muted)]">
+              Your pick: <span className="font-bold text-white">{home} vs {away}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-[var(--muted)]">Actual: </span>
+              <span className={`font-bold ${isLive ? "text-[var(--crimson)]" : isFinal ? "text-[var(--pitch-light)]" : "text-white"}`}>
+                {fixture.home_score ?? "–"} vs {fixture.away_score ?? "–"}
+              </span>
+              {pointsLabel && <span className={"ml-2 px-2 py-0.5 rounded-full font-bold text-[10px] " + pointsClass}>{pointsLabel}</span>}
+            </div>
+          </div>
+        )}
+
+        {/* Original score display for other cases */}
+        {!showScore && (showActual || isFinal || isLive) && (fixture.home_score !== null) && (
+          <div className="flex justify-between items-center mt-2 pt-2 border-t border-dashed border-[var(--border)] text-xs">
+            <span className="text-[var(--muted)]">
+              Score:&nbsp;
+              <span className="scoreboard gold text-base">
+                {fixture.home_score} – {fixture.away_score}
+              </span>
+            </span>
+            {pointsLabel && <span className={"px-2 py-0.5 rounded-full font-bold text-[11px] " + pointsClass}>{pointsLabel}</span>}
+          </div>
+        )}
+      </div>
       {saved && !locked && <div className="text-[10px] text-[var(--pitch-light)] mt-1">✓ Saved</div>}
     </div>
   );
