@@ -8,7 +8,7 @@ type Props = {
   pick?: Pick;
   showActual?: boolean;
   showScore?: boolean;
-  userLocation?: string | null;
+  userLocation: string | null;
   onSave: (fixtureId: number, home: number, away: number) => void;
 };
 
