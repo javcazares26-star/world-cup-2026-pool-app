@@ -32,10 +32,25 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   const [fixtures, setFixtures] = useState(initialFixtures);
   const [picks, setPicks] = useState(initialPicks);
   const [leaderboard, setLeaderboard] = useState(initialLb);
+  const [poolAdminHidden, setPoolAdminHidden] = useState(pool.admin_hidden);
 
   // Get current user's location for timezone display
   const myMember = initialMembers.find(m => m.user_id === userId);
   const myLocation = myMember?.location ?? null;
+
+  // ====== REALTIME: listen for pool updates (admin_hidden toggle) ======
+  useEffect(() => {
+    const supabase = createClient();
+    const ch = supabase
+      .channel("pool-changes")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "pools" }, (payload) => {
+        if ((payload.new as any).id === pool.id) {
+          setPoolAdminHidden((payload.new as any).admin_hidden);
+        }
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [pool.id]);
 
   // ====== REALTIME: listen for fixture updates (live scores) ======
   useEffect(() => {
@@ -261,11 +276,11 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       )}
 
       {tab === "members" && (
-        <Members userId={userId} members={initialMembers} pool={pool} />
+        <Members userId={userId} members={initialMembers} pool={{ ...pool, admin_hidden: poolAdminHidden }} />
       )}
 
       {tab === "leaderboard" && (
-        <Leaderboard rows={leaderboard} meId={userId} pool={pool} />
+        <Leaderboard rows={leaderboard} meId={userId} pool={{ ...pool, admin_hidden: poolAdminHidden }} />
       )}
 
       {tab === "chat" && (

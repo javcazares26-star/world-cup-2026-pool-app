@@ -219,6 +219,7 @@ create policy "users delete own unlocked picks"
 -- =========================================================================
 alter publication supabase_realtime add table public.fixtures;
 alter publication supabase_realtime add table public.picks;
+alter publication supabase_realtime add table public.pools;
 
 -- =========================================================================
 -- RPC: join_pool_by_code
