@@ -1,18 +1,20 @@
 "use client";
 import type { Fixture, Pick } from "@/lib/types";
 import { useEffect, useState } from "react";
+import { formatDualTime } from "@/lib/timezones";
 
 type Props = {
   fixture: Fixture;
   pick?: Pick;
   showActual?: boolean;
   showScore?: boolean;
+  userLocation?: string | null;
   onSave: (fixtureId: number, home: number, away: number) => void;
 };
 
 const LOCK_LEAD_MS = 5 * 60 * 1000; // picks lock 5 minutes before kickoff
 
-export function MatchRow({ fixture, pick, showActual, showScore, onSave }: Props) {
+export function MatchRow({ fixture, pick, showActual, showScore, userLocation, onSave }: Props) {
   const [home, setHome] = useState(pick?.home_pick ?? 0);
   const [away, setAway] = useState(pick?.away_pick ?? 0);
   const [saved, setSaved] = useState(false);
@@ -88,7 +90,7 @@ export function MatchRow({ fixture, pick, showActual, showScore, onSave }: Props
         ) : countdownLabel ? (
           <span className="text-[var(--crimson)] font-bold">⏱ Locks in {countdownLabel}</span>
         ) : (
-          <span>{ko.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+          <span className="text-xs">{formatDualTime(fixture.kickoff_utc, fixture.city, userLocation)}</span>
         )}
       </div>
       {isKnockout && (fixture.qualified_team_home || fixture.qualified_team_away) && (

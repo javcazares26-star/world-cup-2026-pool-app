@@ -33,6 +33,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   const [picks, setPicks] = useState(initialPicks);
   const [leaderboard, setLeaderboard] = useState(initialLb);
 
+  // Get current user's location for timezone display
+  const myMember = initialMembers.find(m => m.user_id === userId);
+  const myLocation = myMember?.location ?? null;
+
   // ====== REALTIME: listen for fixture updates (live scores) ======
   useEffect(() => {
     const supabase = createClient();
@@ -190,7 +194,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                   {group}
                 </div>
                 {ms.map(m => (
-                  <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore />
+                  <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} />
                 ))}
               </div>
             ))}
@@ -231,7 +235,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                   <div className="space-y-0">
                     {ms.sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime())
                       .map(m => (
-                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore />
+                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} />
                     ))}
                   </div>
                 </div>
