@@ -33,6 +33,7 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
   const [selectedPoolId, setSelectedPoolId] = useState<string>(pool.id);
   const [confirmCode, setConfirmCode] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [adminHidden, setAdminHidden] = useState(pool.admin_hidden);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
@@ -86,6 +87,19 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
     router.refresh();
   }
 
+  async function toggleAdminHidden() {
+    setErr(null); setBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("pools")
+      .update({ admin_hidden: !adminHidden })
+      .eq("id", pool.id);
+    setBusy(false);
+    if (error) { fail(error.message); return; }
+    setAdminHidden(!adminHidden);
+    flash(adminHidden ? "You're now visible in Members and Leaderboard." : "You're now hidden from Members and Leaderboard.");
+  }
+
   async function deletePool() {
     if (!selectedPool) { fail("Pick a pool from the dropdown first."); return; }
     if (confirmCode !== selectedPool.code) {
@@ -137,6 +151,23 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
             {busy ? "…" : "Add to pool"}
           </button>
         </form>
+      </div>
+
+      {/* === Admin visibility toggle === */}
+      <div className="card">
+        <h2 className="font-bold text-lg mb-1">Visibility</h2>
+        <p className="text-sm text-[var(--muted)] mb-3">
+          {adminHidden
+            ? "You are currently hidden from the Members list and Leaderboard. You can still access everything and see all members in the Admin panel."
+            : "You are currently visible in the Members list and Leaderboard."}
+        </p>
+        <button
+          onClick={toggleAdminHidden}
+          disabled={busy}
+          className={`btn ${adminHidden ? "btn-primary" : ""} justify-center`}
+        >
+          {busy ? "…" : adminHidden ? "👁 Make me visible" : "🔒 Hide me"}
+        </button>
       </div>
 
       {/* === Members === */}
