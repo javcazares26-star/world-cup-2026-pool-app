@@ -104,8 +104,7 @@ export function calculateGroupStandings(
       awayTeam.goalsFor += fixture.away_score;
       awayTeam.goalsAgainst += fixture.home_score;
 
-      // Calculate points based on most common picks (simplified for now)
-      // In a real pool, you'd average or use consensus picks
+      // Calculate points based on actual match result
       const homePoints = fixture.home_score > fixture.away_score ? 3 :
                         fixture.home_score === fixture.away_score ? 1 : 0;
       const awayPoints = fixture.away_score > fixture.home_score ? 3 :
