@@ -6,13 +6,14 @@ import { MatchRow } from "./_MatchRow";
 import { Leaderboard } from "./_Leaderboard";
 import { Kpis } from "./_Kpis";
 import { FairPlay } from "./_FairPlay";
-import { Chat } from "./_Chat";
 import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Teams } from "./_Teams";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { BracketPreview } from "./_BracketPreview";
 import type { Message } from "@/lib/types";
+
+export type { Member, OwnedPoolRef } from "./_Admin";
 
 type Props = {
   pool: Pool;
@@ -152,7 +153,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           ["teams", "🧑‍🤝‍🧑 Teams"],
           ["members", "👥 Members"],
           ["leaderboard", "🥇 Leaderboard"],
-          ["chat", "💬 Chat"],
           ...(isOwner ? [["admin", "⚙️ Admin"]] : []),
         ] as [string, string][]).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}
@@ -287,10 +287,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
 
       {tab === "leaderboard" && (
         <Leaderboard rows={leaderboard} meId={userId} pool={{ ...pool, admin_hidden: poolAdminHidden }} />
-      )}
-
-      {tab === "chat" && (
-        <Chat poolId={pool.id} userId={userId} initial={initialMessages} />
       )}
 
       {tab === "admin" && isOwner && (

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { PoolTabs } from "./_PoolTabs";
+import { PoolLayout } from "./_PoolLayout";
 import { ShareBar } from "./_ShareBar";
 
 export const dynamic = "force-dynamic";
@@ -78,36 +78,37 @@ export default async function PoolPage({
   const tab = searchParams.tab ?? "picks";
 
   return (
-    <main className="max-w-5xl mx-auto p-4 sm:p-6">
-      <header className="flex justify-between items-start gap-4 flex-wrap mb-6">
-        <div>
-          <Link href="/pools" className="text-xs text-[var(--muted)] hover:text-white inline-flex items-center gap-1">
-            ← Your pools
-          </Link>
-          <div className="flex items-baseline gap-3 mt-2 flex-wrap">
-            <span className="text-3xl trophy-shine">🏆</span>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{pool.name}</h1>
-          </div>
-          <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--muted)] mt-2 flex items-center gap-3">
-            <span>Canada · México · USA 2026</span>
-            <span className="text-[var(--border)]">|</span>
-            <span>Invite code <span className="text-[var(--gold)] font-mono font-bold tracking-widest">{pool.code}</span></span>
-          </div>
+    <PoolLayout
+      pool={pool}
+      userId={user.id}
+      fixtures={fixtures ?? []}
+      myPicks={myPicks ?? []}
+      leaderboard={leaderboard ?? []}
+      messages={messages}
+      members={members}
+      ownedPools={ownedPools}
+      initialTab={tab}
+      header={
+        <div className="p-4 sm:p-6 border-b border-[var(--border)]">
+          <header className="flex justify-between items-start gap-4 flex-wrap max-w-5xl mx-auto">
+            <div>
+              <Link href="/pools" className="text-xs text-[var(--muted)] hover:text-white inline-flex items-center gap-1">
+                ← Your pools
+              </Link>
+              <div className="flex items-baseline gap-3 mt-2 flex-wrap">
+                <span className="text-3xl trophy-shine">🏆</span>
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{pool.name}</h1>
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--muted)] mt-2 flex items-center gap-3">
+                <span>Canada · México · USA 2026</span>
+                <span className="text-[var(--border)]">|</span>
+                <span>Invite code <span className="text-[var(--gold)] font-mono font-bold tracking-widest">{pool.code}</span></span>
+              </div>
+            </div>
+            <ShareBar code={pool.code} name={pool.name} />
+          </header>
         </div>
-        <ShareBar code={pool.code} name={pool.name} />
-      </header>
-
-      <PoolTabs
-        pool={pool}
-        userId={user.id}
-        fixtures={fixtures ?? []}
-        myPicks={myPicks ?? []}
-        leaderboard={leaderboard ?? []}
-        messages={messages}
-        members={members}
-        ownedPools={ownedPools}
-        initialTab={tab}
-      />
-    </main>
+      }
+    />
   );
 }
