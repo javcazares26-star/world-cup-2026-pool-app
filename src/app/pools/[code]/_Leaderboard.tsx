@@ -1,7 +1,10 @@
 "use client";
-import type { LeaderboardRow } from "@/lib/types";
+import type { LeaderboardRow, Pool } from "@/lib/types";
 
-export function Leaderboard({ rows, meId }: { rows: LeaderboardRow[]; meId: string }) {
+export function Leaderboard({ rows, meId, pool }: { rows: LeaderboardRow[]; meId: string; pool: Pool }) {
+  // Filter out hidden admin from leaderboard
+  const visibleRows = rows.filter(r => !(r.user_id === pool.owner_id && pool.admin_hidden));
+
   return (
     <div className="card !p-0 overflow-hidden">
       <table className="w-full">
@@ -15,10 +18,10 @@ export function Leaderboard({ rows, meId }: { rows: LeaderboardRow[]; meId: stri
           </tr>
         </thead>
         <tbody>
-          {rows.length === 0 && (
+          {visibleRows.length === 0 && (
             <tr><td colSpan={5} className="text-center text-[var(--muted)] p-6">No picks yet. Be the first!</td></tr>
           )}
-          {rows.map((r, i) => {
+          {visibleRows.map((r, i) => {
             const me = r.user_id === meId;
             const rankClass = i === 0 ? "rank-gold"
               : i === 1 ? "rank-silver"

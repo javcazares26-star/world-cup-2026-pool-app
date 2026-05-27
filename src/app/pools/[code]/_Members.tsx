@@ -2,10 +2,12 @@
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 import type { Member } from "./_Admin";
+import type { Pool } from "@/lib/types";
 
-export function Members({ userId, members: initial }: {
+export function Members({ userId, members: initial, pool }: {
   userId: string;
   members: Member[];
+  pool: Pool;
 }) {
   const [members, setMembers] = useState<Member[]>(initial);
   const [editing, setEditing] = useState(false);
@@ -15,6 +17,9 @@ export function Members({ userId, members: initial }: {
   const me = members.find(m => m.user_id === userId);
   const [location, setLocation] = useState(me?.location ?? "");
   const [avatarUrl, setAvatarUrl] = useState(me?.avatar_url ?? "");
+
+  // Filter out hidden admin from display
+  const visibleMembers = members.filter(m => !(m.user_id === pool.owner_id && pool.admin_hidden));
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -41,7 +46,7 @@ export function Members({ userId, members: initial }: {
       <div className="card mb-4 flex justify-between items-center gap-3 flex-wrap">
         <div>
           <h2 className="font-bold text-lg">Members</h2>
-          <p className="text-sm text-[var(--muted)]">{members.length} player{members.length === 1 ? "" : "s"} in this pool</p>
+          <p className="text-sm text-[var(--muted)]">{visibleMembers.length} player{visibleMembers.length === 1 ? "" : "s"} in this pool</p>
         </div>
         {!editing && (
           <button onClick={() => setEditing(true)} className="btn">
@@ -88,7 +93,7 @@ export function Members({ userId, members: initial }: {
       )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {members.map(m => {
+        {visibleMembers.map(m => {
           const isMe = m.user_id === userId;
           return (
             <div key={m.user_id} className={"card flex items-center gap-3 " + (isMe ? "gold-border" : "")}>

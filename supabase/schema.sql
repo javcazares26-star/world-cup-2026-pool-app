@@ -247,7 +247,7 @@ $$;
 -- RPC: create_pool
 -- Atomic: insert pool + add owner as member.
 -- =========================================================================
-create or replace function public.create_pool(p_name text, p_code text default null)
+create or replace function public.create_pool(p_name text, p_code text default null, p_admin_hidden boolean default false)
 returns uuid
 language plpgsql security definer
 set search_path = public
@@ -257,7 +257,7 @@ declare
   v_code    text;
 begin
   v_code := coalesce(upper(p_code), upper(substr(encode(gen_random_bytes(4), 'hex'), 1, 6)));
-  insert into public.pools (code, name, owner_id) values (v_code, p_name, auth.uid())
+  insert into public.pools (code, name, owner_id, admin_hidden) values (v_code, p_name, auth.uid(), p_admin_hidden)
   returning id into v_pool_id;
   insert into public.pool_members (pool_id, user_id, role) values (v_pool_id, auth.uid(), 'owner');
   return v_pool_id;

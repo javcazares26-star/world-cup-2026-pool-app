@@ -257,11 +257,11 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       )}
 
       {tab === "members" && (
-        <Members userId={userId} members={initialMembers} />
+        <Members userId={userId} members={initialMembers} pool={pool} />
       )}
 
       {tab === "leaderboard" && (
-        <Leaderboard rows={leaderboard} meId={userId} />
+        <Leaderboard rows={leaderboard} meId={userId} pool={pool} />
       )}
 
       {tab === "chat" && (

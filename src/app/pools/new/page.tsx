@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 export default function NewPoolPage() {
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [adminHidden, setAdminHidden] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -32,6 +33,7 @@ export default function NewPoolPage() {
     const { data: poolId, error } = await supabase.rpc("create_pool", {
       p_name: name.trim(),
       p_code: code.trim() || null,
+      p_admin_hidden: adminHidden,
     });
     if (error) { setBusy(false); setErr(error.message); return; }
 
@@ -89,6 +91,18 @@ export default function NewPoolPage() {
             placeholder="auto-generated if blank"
             className="w-full bg-[var(--bg-2)] border border-[var(--border)] rounded-lg px-3 py-2 mt-1 font-mono uppercase tracking-widest outline-none focus:border-[var(--crimson)]"
           />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="adminHidden"
+            checked={adminHidden}
+            onChange={e => setAdminHidden(e.target.checked)}
+            className="w-4 h-4 rounded border border-[var(--border)] bg-[var(--bg-2)] cursor-pointer"
+          />
+          <label htmlFor="adminHidden" className="text-sm text-[var(--muted)] cursor-pointer select-none">
+            Hide me from Members and Leaderboard
+          </label>
         </div>
         {err && <div className="text-sm text-[var(--crimson)]">{err}</div>}
         <button disabled={busy || !name} className="btn btn-primary justify-center">

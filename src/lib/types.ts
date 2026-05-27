@@ -38,6 +38,7 @@ export type Pool = {
   owner_id: string;
   scoring: { exact: number; outcome: number; miss: number };
   is_public: boolean;
+  admin_hidden: boolean;
   created_at: string;
 };
 
