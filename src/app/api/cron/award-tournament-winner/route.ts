@@ -4,18 +4,19 @@ import { NextRequest, NextResponse } from "next/server";
 /**
  * Cron endpoint to automatically award tournament winner points
  *
- * Call this endpoint daily starting July 15, 2026
+ * Call this endpoint on July 19, 2026 after the Final match completes
  * It will:
- * 1. Check if the Final match has been played (status = "FT", "AET", or "PEN")
- * 2. Identify the winning team
- * 3. Award 5 points to all users who predicted that team correctly
+ * 1. Find the Final match and get the winning team
+ * 2. Award 5 points to all users who predicted that team correctly
+ * 3. Update leaderboard automatically
  *
  * Usage:
  * GET /api/cron/award-tournament-winner?secret=YOUR_CRON_SECRET
  *
- * Set up external cron (cron-job.org is free):
+ * Set up one-time cron (cron-job.org is free):
  * - URL: https://mundial2026-aesthion.vercel.app/api/cron/award-tournament-winner?secret=YOUR_SECRET
- * - Schedule: Daily at 12:00 UTC starting July 15, 2026
+ * - Schedule: July 19, 2026 at 22:00 UTC (after Final finishes)
+ * - It's a one-time execution, not recurring
  */
 
 export async function GET(request: NextRequest) {

@@ -1,10 +1,12 @@
 -- Update the leaderboard view to include tournament winner pick points
 -- This view needs to combine pick_scores + tournament_winner_pick points
 
--- Update v_leaderboard to include tournament winner pick points
--- Replace your existing v_leaderboard view with this one
+-- Drop and recreate v_leaderboard to include tournament winner pick points
+-- This must be done in two steps: drop the old view, then create the new one
 
-create or replace view public.v_leaderboard as
+drop view if exists public.v_leaderboard cascade;
+
+create view public.v_leaderboard as
 select
   pm.pool_id,
   pm.user_id,

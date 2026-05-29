@@ -172,15 +172,15 @@ After Final match is played:
 
 3. **Cron Setup** (automatic points award):
    - Endpoint: `GET /api/cron/award-tournament-winner?secret=CRON_SECRET`
-   - Set up free cron at https://cron-job.org:
+   - Set up one-time cron at https://cron-job.org:
      - URL: `https://mundial2026-aesthion.vercel.app/api/cron/award-tournament-winner?secret=YOUR_CRON_SECRET`
-     - Schedule: Daily at 12:00 UTC (starting July 15, 2026)
+     - Schedule: **July 19, 2026 at 22:00 UTC** (after Final finishes)
      - Timeout: 30 seconds
-   - The function automatically:
-     - Checks if Final has been played
-     - Identifies winning team
-     - Awards 5 points to all correct predictions
-     - Updates leaderboard with bonus points
+     - This is a **one-time execution**, not recurring
+   - The function will:
+     - Find the Final match and identify winning team
+     - Award 5 points to all users who predicted correctly
+     - Update leaderboard with bonus points automatically
 
 ## Future Enhancements
 
