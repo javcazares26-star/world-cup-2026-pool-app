@@ -69,20 +69,8 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
     return () => { supabase.removeChannel(ch); };
   }, []);
 
-  // ====== REALTIME: refresh leaderboard when any pick changes in our pool ======
-  useEffect(() => {
-    const supabase = createClient();
-    const ch = supabase
-      .channel(`picks-${pool.id}`)
-      .on("postgres_changes",
-          { event: "*", schema: "public", table: "picks", filter: `pool_id=eq.${pool.id}` },
-          async () => {
-            const { data } = await supabase.from("v_leaderboard").select("*").eq("pool_id", pool.id);
-            if (data) setLeaderboard(data);
-          })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [pool.id]);
+  // NOTE: Real-time leaderboard updates are now handled in _PoolLayout.tsx
+  // to avoid duplicate subscriptions to the same channel
 
   // ====== Group fixtures — separate by stage ======
   const groupStageFixtures = useMemo(() => fixtures.filter(f => f.group_label), [fixtures]);

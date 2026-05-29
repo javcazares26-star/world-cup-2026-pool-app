@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { Fixture, Pick, Pool, LeaderboardRow, Message } from "@/lib/types";
 import { PoolTabs, type Member, type OwnedPoolRef } from "./_PoolTabs";
 import { Chat } from "./_Chat";
@@ -39,8 +39,8 @@ export function PoolLayout({
   // Track previous scores to detect new goals
   const [prevScores, setPrevScores] = useState<Record<number, { h: number; a: number }>>({});
 
-  // Track previous leaderboard rank to detect changes
-  const [prevRank, setPrevRank] = useState<number | null>(null);
+  // Track previous leaderboard rank using ref (not state) to avoid causing re-subscriptions
+  const prevRankRef = useRef<number | null>(null);
 
   // ====== REALTIME: Goal scoring notifications ======
   useEffect(() => {
@@ -104,8 +104,8 @@ export function PoolLayout({
 
           // Check if my rank changed
           const myNewRank = data.findIndex((r) => r.user_id === userId) + 1;
-          if (prevRank && myNewRank !== prevRank) {
-            const direction = myNewRank < prevRank ? "up" : "down";
+          if (prevRankRef.current && myNewRank !== prevRankRef.current) {
+            const direction = myNewRank < prevRankRef.current ? "up" : "down";
             const emoji = direction === "up" ? "📈" : "📉";
 
             addNotification({
@@ -115,7 +115,7 @@ export function PoolLayout({
               duration: 7000,
             });
           }
-          setPrevRank(myNewRank);
+          prevRankRef.current = myNewRank;
         }
       })
       .subscribe();
@@ -123,13 +123,13 @@ export function PoolLayout({
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [pool.id, userId, prevRank, addNotification]);
+  }, [pool.id, userId]);
 
-  // Initialize previous rank
+  // Initialize previous rank ref
   useEffect(() => {
     const myRank = leaderboard.findIndex((r) => r.user_id === userId) + 1;
-    setPrevRank(myRank || null);
-  }, []);
+    prevRankRef.current = myRank || null;
+  }, [leaderboard, userId]);
 
   return (
     <div className="flex flex-col h-screen bg-[var(--bg)]">
