@@ -2,8 +2,9 @@
 import { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Suspense } from "react";
 
-export default function CallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/pools";
@@ -35,5 +36,22 @@ export default function CallbackPage() {
         <p className="text-[var(--muted)] mt-4">Signing you in…</p>
       </div>
     </main>
+  );
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="max-w-md mx-auto p-6 mt-24">
+          <div className="card text-center">
+            <div className="text-5xl">⚽</div>
+            <p className="text-[var(--muted)] mt-4">Loading…</p>
+          </div>
+        </main>
+      }
+    >
+      <CallbackContent />
+    </Suspense>
   );
 }
