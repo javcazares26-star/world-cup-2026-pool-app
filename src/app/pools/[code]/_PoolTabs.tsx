@@ -10,7 +10,6 @@ import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Teams } from "./_Teams";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
-import { BracketPreview } from "./_BracketPreview";
 import type { Message } from "@/lib/types";
 
 export type { Member, OwnedPoolRef } from "./_Admin";
@@ -136,7 +135,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       <nav className="card !p-1.5 flex gap-1 my-4 overflow-x-auto">
         {([
           ["picks", "📝 Picks"],
-          ["bracket", "🔮 Bracket"],
           ["fairplay", "📊 Groups Live"],
           ["teams", "🧑‍🤝‍🧑 Teams"],
           ["members", "👥 Members"],
@@ -254,11 +252,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           </div>
           )}
         </>
-      )}
-
-
-      {tab === "bracket" && (
-        <BracketPreview fixtures={fixtures} picks={picks} />
       )}
 
       {tab === "fairplay" && (
