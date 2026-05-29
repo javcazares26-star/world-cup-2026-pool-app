@@ -135,6 +135,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
 
       <nav className="card !p-1.5 flex gap-1 my-4 overflow-x-auto">
         {([
+          ["winner", "🏆 Winner"],
           ["picks", "📝 Picks"],
           ["fairplay", "📊 Groups Live"],
           ["teams", "🧑‍🤝‍🧑 Teams"],
@@ -152,6 +153,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
         ))}
       </nav>
 
+      {tab === "winner" && (
+        <WinnerPick pool={pool} userId={userId} fixtures={fixtures} />
+      )}
+
       {tab === "picks" && (
         <>
           <div className="card mb-4 border-l-4" style={{ borderLeftColor: "var(--crimson)" }}>
@@ -162,9 +167,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. See your picks and live scores in the same place.
             </p>
           </div>
-
-          {/* WORLD CUP WINNER PICK */}
-          <WinnerPick pool={pool} userId={userId} fixtures={fixtures} />
 
           {/* STAGE TOGGLE */}
           <div className="card !p-2 flex gap-2 mb-4">

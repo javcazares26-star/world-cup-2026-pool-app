@@ -35,7 +35,7 @@ function LoginContent() {
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        emailRedirectTo: `${window.location.origin}/auth/callback-client?next=${encodeURIComponent(next)}`,
       },
     });
     setEmailBusy(false);

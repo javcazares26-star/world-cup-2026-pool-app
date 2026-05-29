@@ -11,5 +11,7 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(`${origin}${next}`);
   }
+
+  // Callback should have either a code (OAuth) or be from magic link (handled by callback-client)
   return NextResponse.redirect(`${origin}/login?error=oauth`);
 }
