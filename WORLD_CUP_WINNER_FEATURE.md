@@ -164,12 +164,23 @@ After Final match is played:
    psql your-connection-string < migrations/update_leaderboard_with_winner_pick.sql
    ```
 
-2. **Environment**: No new env vars needed (uses existing Supabase connection)
+2. **Environment**: Add cron secret for automatic point awards
+   ```bash
+   # In Vercel Dashboard → Settings → Environment Variables:
+   CRON_SECRET=your-secret-random-string
+   ```
 
-3. **Cron**: No cron needed for automatic locking (handled client-side)
-   - However, for awarding points on July 19, you can:
-     - Manually run the award function
-     - Or set up a scheduled function in Supabase
+3. **Cron Setup** (automatic points award):
+   - Endpoint: `GET /api/cron/award-tournament-winner?secret=CRON_SECRET`
+   - Set up free cron at https://cron-job.org:
+     - URL: `https://mundial2026-aesthion.vercel.app/api/cron/award-tournament-winner?secret=YOUR_CRON_SECRET`
+     - Schedule: Daily at 12:00 UTC (starting July 15, 2026)
+     - Timeout: 30 seconds
+   - The function automatically:
+     - Checks if Final has been played
+     - Identifies winning team
+     - Awards 5 points to all correct predictions
+     - Updates leaderboard with bonus points
 
 ## Future Enhancements
 
@@ -185,10 +196,7 @@ After Final match is played:
    - Con: Must match exactly with fixture team names
    - Solution: Extracted from actual fixtures data
 
-2. **Manual Award**: Points must be manually awarded after Final (no auto-award yet)
-   - Can be automated with a Supabase scheduled function if needed
-
-3. **Leaderboard View**: May need to update your existing leaderboard query
+2. **Leaderboard View**: May need to update your existing leaderboard query
    - Check `WORLD_CUP_WINNER_FEATURE.md` Phase 4 for migration steps
 
 ## Support
