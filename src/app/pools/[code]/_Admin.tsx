@@ -34,6 +34,8 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
   const [confirmCode, setConfirmCode] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [adminHidden, setAdminHidden] = useState(pool.admin_hidden);
+  const [poolName, setPoolName] = useState(pool.name);
+  const [newPoolName, setNewPoolName] = useState(pool.name);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
@@ -98,6 +100,24 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
     if (error) { fail(error.message); return; }
     setAdminHidden(!adminHidden);
     flash(adminHidden ? "You're now visible in Members and Leaderboard." : "You're now hidden from Members and Leaderboard.");
+  }
+
+  async function renamePool(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = newPoolName.trim();
+    if (!trimmed || trimmed === poolName || busy) return;
+    setErr(null); setBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("pools")
+      .update({ name: trimmed })
+      .eq("id", pool.id);
+    setBusy(false);
+    if (error) { fail(error.message); return; }
+    setPoolName(trimmed);
+    setNewPoolName(trimmed);
+    flash(`Pool renamed to "${trimmed}".`);
+    router.refresh();
   }
 
   async function deletePool() {
@@ -168,6 +188,29 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
         >
           {busy ? "…" : adminHidden ? "👁 Make me visible" : "🔒 Hide me"}
         </button>
+      </div>
+
+      {/* === Rename Pool === */}
+      <div className="card">
+        <h2 className="font-bold text-lg mb-1">Rename pool</h2>
+        <p className="text-sm text-[var(--muted)] mb-3">
+          Change the name that appears at the top of this pool.
+        </p>
+        <form onSubmit={renamePool} className="flex gap-2 flex-wrap">
+          <input
+            type="text"
+            value={newPoolName}
+            onChange={e => setNewPoolName(e.target.value)}
+            placeholder="Pool name"
+            className="flex-1 min-w-[200px] bg-[var(--bg-2)] border border-[var(--border)] rounded-lg px-3 py-2 outline-none focus:border-[var(--gold)] text-sm"
+          />
+          <button
+            disabled={busy || newPoolName.trim() === poolName || !newPoolName.trim()}
+            className="btn btn-primary"
+          >
+            {busy ? "…" : "Rename"}
+          </button>
+        </form>
       </div>
 
       {/* === Members === */}
