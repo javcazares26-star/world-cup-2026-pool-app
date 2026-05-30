@@ -120,41 +120,52 @@ function simulateGroupStandings(
     });
   });
 
-  // Process each group fixture based on picks
+  // Process each group fixture based on real scores or picks
   groupFixtures.forEach(fixture => {
-    // Find any pick for this fixture (we use all picks, not just one user)
-    // For simulation, we average picks or use the mode
-    const picksForFixture = picks.filter(p => p.fixture_id === fixture.id);
-
-    if (picksForFixture.length === 0) {
-      // No picks yet, skip this fixture
-      return;
-    }
-
-    // Use average of all picks as the predicted outcome
-    const avgHome = Math.round(
-      picksForFixture.reduce((sum, p) => sum + p.home_pick, 0) / picksForFixture.length
-    );
-    const avgAway = Math.round(
-      picksForFixture.reduce((sum, p) => sum + p.away_pick, 0) / picksForFixture.length
-    );
-
     const group = fixture.group_label!;
     const homeStanding = standings[group].find(s => s.team === fixture.home_team)!;
     const awayStanding = standings[group].find(s => s.team === fixture.away_team)!;
 
+    // Determine scores: prefer real API-Football scores, fall back to picks
+    let homeScore: number | null = null;
+    let awayScore: number | null = null;
+
+    // Check if fixture has real scores from API-Football (match is finished)
+    const isFinished = ['FT', 'AET', 'PEN'].includes(fixture.status_short ?? '');
+    if (isFinished && fixture.home_score !== null && fixture.away_score !== null) {
+      // Use actual scores from API-Football
+      homeScore = fixture.home_score;
+      awayScore = fixture.away_score;
+    } else {
+      // Match not finished yet, use picks
+      const picksForFixture = picks.filter(p => p.fixture_id === fixture.id);
+      if (picksForFixture.length === 0) {
+        // No picks yet, skip this fixture
+        return;
+      }
+      // Use average of all picks as the predicted outcome
+      homeScore = Math.round(
+        picksForFixture.reduce((sum, p) => sum + p.home_pick, 0) / picksForFixture.length
+      );
+      awayScore = Math.round(
+        picksForFixture.reduce((sum, p) => sum + p.away_pick, 0) / picksForFixture.length
+      );
+    }
+
+    if (homeScore === null || awayScore === null) return;
+
     homeStanding.plays++;
     awayStanding.plays++;
-    homeStanding.goalsFor += avgHome;
-    homeStanding.goalsAgainst += avgAway;
-    awayStanding.goalsFor += avgAway;
-    awayStanding.goalsAgainst += avgHome;
+    homeStanding.goalsFor += homeScore;
+    homeStanding.goalsAgainst += awayScore;
+    awayStanding.goalsFor += awayScore;
+    awayStanding.goalsAgainst += homeScore;
 
-    if (avgHome > avgAway) {
+    if (homeScore > awayScore) {
       homeStanding.wins++;
       homeStanding.points += 3;
       awayStanding.losses++;
-    } else if (avgAway > avgHome) {
+    } else if (awayScore > homeScore) {
       awayStanding.wins++;
       awayStanding.points += 3;
       homeStanding.losses++;
