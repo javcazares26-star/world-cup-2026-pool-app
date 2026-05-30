@@ -94,36 +94,61 @@ export function PoolLayout({
   // ====== REALTIME: Leaderboard change notifications ======
   useEffect(() => {
     const supabase = createClient();
-    const ch = supabase
+
+    async function updateLeaderboardAndNotify() {
+      // Fetch updated leaderboard
+      const { data } = await supabase.from("v_leaderboard").select("*").eq("pool_id", pool.id);
+      if (data) {
+        setLeaderboard(data);
+
+        // Check if my rank changed
+        const myNewRank = data.findIndex((r) => r.user_id === userId) + 1;
+        const myNewPoints = data[myNewRank - 1]?.points || 0;
+
+        if (prevRankRef.current && myNewRank !== prevRankRef.current) {
+          const direction = myNewRank < prevRankRef.current ? "up" : "down";
+          const positionChange = Math.abs(myNewRank - prevRankRef.current);
+          const emoji = direction === "up" ? "🚀" : "📉";
+
+          addNotification({
+            type: "leaderboard",
+            title: `${emoji} Leaderboard Update`,
+            message: `You moved ${direction} ${positionChange} position${positionChange > 1 ? "s" : ""} to #${myNewRank} with ${myNewPoints} points`,
+            duration: 7000,
+          });
+        }
+        prevRankRef.current = myNewRank;
+      }
+    }
+
+    // Listen to picks changes
+    const picksCh = supabase
       .channel(`picks-${pool.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "picks", filter: `pool_id=eq.${pool.id}` }, async () => {
-        // Fetch updated leaderboard
-        const { data } = await supabase.from("v_leaderboard").select("*").eq("pool_id", pool.id);
-        if (data) {
-          setLeaderboard(data);
+      .on("postgres_changes", { event: "*", schema: "public", table: "picks", filter: `pool_id=eq.${pool.id}` }, updateLeaderboardAndNotify)
+      .subscribe();
 
-          // Check if my rank changed
-          const myNewRank = data.findIndex((r) => r.user_id === userId) + 1;
-          if (prevRankRef.current && myNewRank !== prevRankRef.current) {
-            const direction = myNewRank < prevRankRef.current ? "up" : "down";
-            const emoji = direction === "up" ? "📈" : "📉";
+    // Also listen to fixture score updates (when matches finish)
+    const fixturesCh = supabase
+      .channel("fixture-leaderboard-updates")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "fixtures" }, (payload) => {
+        const newFixture = payload.new as Fixture;
+        const oldFixture = payload.old as Fixture;
 
-            addNotification({
-              type: "leaderboard",
-              title: `${emoji} Leaderboard Update`,
-              message: `You moved ${direction} to #${myNewRank}! ${data[myNewRank - 1]?.points || 0} points`,
-              duration: 7000,
-            });
-          }
-          prevRankRef.current = myNewRank;
+        // Only trigger leaderboard update if score changed (match finished)
+        if (
+          (newFixture.home_score !== oldFixture.home_score || newFixture.away_score !== oldFixture.away_score) &&
+          newFixture.group_label // Only group stage matches affect leaderboard
+        ) {
+          updateLeaderboardAndNotify();
         }
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(ch);
+      supabase.removeChannel(picksCh);
+      supabase.removeChannel(fixturesCh);
     };
-  }, [pool.id, userId]);
+  }, [pool.id, userId, addNotification]);
 
   // Initialize previous rank ref
   useEffect(() => {
