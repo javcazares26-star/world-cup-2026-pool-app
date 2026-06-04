@@ -21,14 +21,25 @@ export function WinnerPick({ pool, userId, fixtures }: Props) {
   const [isLocked, setIsLocked] = useState(false);
   const [hasChangedDuringGroupStage, setHasChangedDuringGroupStage] = useState(false);
 
-  // Extract all unique teams from fixtures
+  // Extract all unique teams from fixtures, filtering out placeholder codes
   const allTeams = useMemo(() => {
     const teams = new Set<string>();
     fixtures.forEach(f => {
       if (f.home_team) teams.add(f.home_team);
       if (f.away_team) teams.add(f.away_team);
     });
-    return Array.from(teams).sort();
+
+    // Filter out placeholder codes (TBD, RU###, W###, etc.)
+    const filteredTeams = Array.from(teams).filter(team => {
+      // Exclude "TBD" and codes that are purely numeric or coded placeholders
+      if (team === "TBD") return false;
+      if (/^RU\d+$/.test(team)) return false; // Matches RU101, RU102, etc.
+      if (/^W\d+$/.test(team)) return false; // Matches W73, W101, etc.
+      if (/^W[A-Z]$/.test(team)) return false; // Matches WA, WB (3rd place placeholders)
+      return true;
+    });
+
+    return filteredTeams.sort();
   }, [fixtures]);
 
   // Calculate lock deadlines
