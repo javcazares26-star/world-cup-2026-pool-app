@@ -58,7 +58,7 @@ export const TEAM_FLAGS: Record<string, string> = {
   "Italy": "🇮🇹",
   "Ukraine": "🇺🇦",
   "Greece": "🇬🇷",
-  "Scotland": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "Scotland": "🇬🇧",
 
   // Group K
   "Ireland": "🇮🇪",
