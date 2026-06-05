@@ -11,6 +11,7 @@ export type Member = {
   location: string | null;
   role: string;
   joined_at: string;
+  is_admin?: boolean;
 };
 
 export type OwnedPoolRef = {
@@ -71,6 +72,22 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
     if (error) { fail(error.message); return; }
     setMembers(prev => prev.filter(m => m.user_id !== targetUserId));
     flash(`Removed ${name}.`);
+  }
+
+  async function toggleMemberAdmin(targetUserId: string, name: string, currentIsAdmin: boolean) {
+    setErr(null); setBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("pool_members")
+      .update({ is_admin: !currentIsAdmin })
+      .eq("pool_id", pool.id)
+      .eq("user_id", targetUserId);
+    setBusy(false);
+    if (error) { fail(error.message); return; }
+    setMembers(prev => prev.map(m =>
+      m.user_id === targetUserId ? { ...m, is_admin: !currentIsAdmin } : m
+    ));
+    flash(`${name} is now ${!currentIsAdmin ? "an admin" : "a member"}.`);
   }
 
   async function inviteMember(e: React.FormEvent) {
@@ -234,6 +251,7 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
             {members.map(m => {
               const isPoolOwner = m.user_id === pool.owner_id;
               const isMe = m.user_id === userId;
+              const isAdmin = m.is_admin || false;
               return (
                 <tr key={m.user_id} className="border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--bg-2)]">
                   <td className="p-3 flex items-center gap-3">
@@ -249,6 +267,8 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
                   <td className="p-3">
                     {isPoolOwner ? (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--gold)] text-[#1a1408] font-bold">OWNER</span>
+                    ) : isAdmin ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--crimson)] text-white font-bold">ADMIN</span>
                     ) : (
                       <span className="text-xs text-[var(--muted)]">member</span>
                     )}
@@ -256,15 +276,24 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
                   <td className="p-3 text-xs text-[var(--muted)]">
                     {new Date(m.joined_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                   </td>
-                  <td className="p-3 text-right">
+                  <td className="p-3 text-right flex gap-2 justify-end">
                     {!isPoolOwner && (
-                      <button
-                        onClick={() => removeMember(m.user_id, m.display_name)}
-                        disabled={busy}
-                        className="btn !py-1 !px-3 text-xs hover:!bg-[var(--crimson)] hover:!border-[var(--crimson)]"
-                      >
-                        Remove
-                      </button>
+                      <>
+                        <button
+                          onClick={() => toggleMemberAdmin(m.user_id, m.display_name, isAdmin)}
+                          disabled={busy}
+                          className={`btn !py-1 !px-3 text-xs ${isAdmin ? "btn-primary" : ""}`}
+                        >
+                          {isAdmin ? "👤 Demote" : "👑 Make Admin"}
+                        </button>
+                        <button
+                          onClick={() => removeMember(m.user_id, m.display_name)}
+                          disabled={busy}
+                          className="btn !py-1 !px-3 text-xs hover:!bg-[var(--crimson)] hover:!border-[var(--crimson)]"
+                        >
+                          Remove
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>

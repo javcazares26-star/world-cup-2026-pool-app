@@ -43,7 +43,7 @@ export default async function PoolPage({
       .order("created_at", { ascending: true })
       .limit(200),
     supabase.from("pool_members")
-      .select("user_id,role,joined_at,profiles(display_name,avatar_url,location)")
+      .select("user_id,role,joined_at,is_admin,profiles(display_name,avatar_url,location)")
       .eq("pool_id", pool.id)
       .order("joined_at"),
     supabase.from("pools")
@@ -70,6 +70,7 @@ export default async function PoolPage({
     user_id: m.user_id,
     role: m.role,
     joined_at: m.joined_at,
+    is_admin: m.is_admin ?? false,
     display_name: m.profiles?.display_name ?? "Player",
     avatar_url: m.profiles?.avatar_url ?? null,
     location: m.profiles?.location ?? null,
