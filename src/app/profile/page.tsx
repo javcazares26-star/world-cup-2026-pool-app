@@ -211,7 +211,7 @@ export default function ProfilePage() {
               className="hidden"
             />
             <button
-              onClick={() => document.querySelector('input[type="file"]')?.click()}
+              onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
               disabled={uploading}
               className="w-full btn btn-primary"
             >
