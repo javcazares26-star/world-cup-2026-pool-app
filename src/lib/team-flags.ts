@@ -27,7 +27,6 @@ export const TEAM_FLAGS: Record<string, string> = {
   "Japan": "🇯🇵",
   "Australia": "🇦🇺",
   "South Korea": "🇰🇷",
-  "Rep. of Korea": "🇰🇷",
   "Uzbekistan": "🇺🇿",
 
   // Group F
@@ -79,7 +78,6 @@ export const TEAM_FLAGS: Record<string, string> = {
   "Curacao": "🇨🇼",
   "Curaçao": "🇨🇼",
   "Cape Verde": "🇨🇻",
-  "Rep. of Korea": "🇰🇷",
   "Iran": "🇮🇷",
   "Iraq": "🇮🇶",
   "Ivory Coast": "🇨🇮",
