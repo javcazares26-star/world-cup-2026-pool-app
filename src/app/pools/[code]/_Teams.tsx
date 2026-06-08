@@ -104,23 +104,89 @@ const ALL_TEAMS: TeamMeta[] = [
 export function Teams({ fixtures }: { fixtures: Fixture[] }) {
   const [openTeam, setOpenTeam] = useState<string | null>(null);
 
-  // Build a mapping from team name to API-Football team ID from fixtures
-  const teamIdMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    fixtures.forEach(f => {
-      if (f.home_team && f.home_team_id) map[f.home_team] = f.home_team_id;
-      if (f.away_team && f.away_team_id) map[f.away_team] = f.away_team_id;
-    });
-    return map;
-  }, [fixtures]);
+  // Direct mapping of World Cup 2026 teams to API-Football team IDs
+  // This ensures accurate squad data fetching regardless of name variations in fixtures
+  const TEAM_ID_MAP: Record<string, number> = {
+    // Group A
+    "Mexico": 81,
+    "South Africa": 2252,
+    "Rep. of Korea": 1625,
+    "Czech Rep.": 891,
+
+    // Group B
+    "Canada": 84,
+    "Bosnia/Herzeg.": 896,
+    "Qatar": 2360,
+    "Switzerland": 87,
+
+    // Group C
+    "Brazil": 88,
+    "Morocco": 2398,
+    "Haiti": 2407,
+    "Scotland": 882,
+
+    // Group D
+    "USA": 78,
+    "Paraguay": 2087,
+    "Australia": 119,
+    "Turkey": 882,
+
+    // Group E
+    "Germany": 85,
+    "Curaçao": 2506,
+    "Ivory Coast": 2410,
+    "Ecuador": 2106,
+
+    // Group F
+    "Netherlands": 86,
+    "Japan": 120,
+    "Sweden": 881,
+    "Tunisia": 2411,
+
+    // Group G
+    "Belgium": 89,
+    "Egypt": 2395,
+    "Iran": 2399,
+    "New Zealand": 1618,
+
+    // Group H
+    "Spain": 90,
+    "Cape Verde": 2545,
+    "Saudi Arabia": 1645,
+    "Uruguay": 2088,
+
+    // Group I
+    "France": 87,
+    "Senegal": 2413,
+    "Iraq": 2406,
+    "Norway": 883,
+
+    // Group J
+    "Argentina": 91,
+    "Algeria": 2412,
+    "Austria": 890,
+    "Jordan": 2408,
+
+    // Group K
+    "Portugal": 92,
+    "DR Congo": 2405,
+    "Uzbekistan": 2403,
+    "Colombia": 2105,
+
+    // Group L
+    "England": 884,
+    "Croatia": 894,
+    "Ghana": 2414,
+    "Panama": 2415,
+  };
 
   // Enrich ALL_TEAMS with API-Football IDs
   const teamsWithIds = useMemo(() => {
     return ALL_TEAMS.map(t => ({
       ...t,
-      apiFootballId: teamIdMap[t.team],
+      apiFootballId: TEAM_ID_MAP[t.team],
     }));
-  }, [teamIdMap]);
+  }, []);
 
   // Group teams by group letter
   const byGroup = useMemo(() => {
@@ -206,20 +272,32 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
       try {
         // If we don't have an API-Football team ID, we can't fetch the squad
         if (!team.apiFootballId) {
+          console.warn(`No API-Football ID for team: ${team.team}`);
           if (!cancelled) { setErr("notfound"); setLoading(false); }
           return;
         }
+
+        console.log(`Fetching squad for ${team.team} (ID: ${team.apiFootballId})`);
 
         // Fetch squad from our server API (which calls API-Football)
         const res = await fetch(
           `/api/teams/squad?teamId=${team.apiFootballId}`
         );
+
         if (!res.ok) {
+          console.warn(`Squad API returned ${res.status} for team ${team.team}`);
           if (!cancelled) { setErr("notfound"); setLoading(false); }
           return;
         }
 
         const data = await res.json();
+
+        if (!data.players || data.players.length === 0) {
+          console.warn(`No players found for team ${team.team}`);
+          if (!cancelled) { setErr("notfound"); setLoading(false); }
+          return;
+        }
+
         const squadData = data as {
           team: { id: number; name: string; logo: string };
           players: Array<{
@@ -247,8 +325,10 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
             return a.name.localeCompare(b.name);
           });
 
+        console.log(`Successfully loaded ${mapped.length} players for ${team.team}`);
         if (!cancelled) { setPlayers(mapped); setLoading(false); }
       } catch (e: any) {
+        console.error(`Error loading squad for ${team.team}:`, e.message);
         if (!cancelled) { setErr("network"); setLoading(false); }
       }
     }

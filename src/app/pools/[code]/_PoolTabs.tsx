@@ -134,8 +134,8 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
     <>
       <Kpis stats={myStats} rank={myRank} live={liveCount} />
 
-      {/* International Friendlies: National teams preparing for World Cup (June 3-10) */}
-      <InternationalFriendlies />
+      {/* Admin Testing: Top Teams Recent Matches (June 7-10) */}
+      <InternationalFriendlies isPoolOwner={isOwner} />
 
       <nav className="card !p-1.5 flex gap-1 my-4 overflow-x-auto">
         {([

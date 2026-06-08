@@ -20,20 +20,28 @@ type Match = {
 };
 
 /**
- * Top Teams Recent Matches
+ * Admin Testing: Top Teams Recent Matches (June 7-10)
  *
- * Displays recent matches from the past 15 days for major World Cup contenders:
- * Spain, Argentina, France, Portugal, Mexico, USA, Germany, Brazil, Netherlands, Belgium
+ * Shows 5 recent matches per day from the top 10 World Cup teams.
+ * Helps test API-Football integration and cron job syncing.
  *
- * Shows recent form and test API-Football live scores and cron job syncing.
- * Visible to all pool participants.
+ * Admin-only. Auto-hides on June 10, 2026.
  */
-export function InternationalFriendlies() {
+export function InternationalFriendlies({ isPoolOwner }: { isPoolOwner: boolean }) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+
+  // Auto-hide on June 10, 2026 at 00:00 UTC
+  const DISABLE_DATE = new Date("2026-06-10T00:00:00Z");
+  const isAfterDisableDate = new Date() >= DISABLE_DATE;
+
+  // Only show to pool owner (admin)
+  if (!isPoolOwner || isAfterDisableDate) {
+    return null;
+  }
 
   const fetchMatches = async () => {
     try {
@@ -191,10 +199,10 @@ export function InternationalFriendlies() {
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="font-bold text-lg flex items-center gap-2">
-            ⚽ Top Teams Recent Matches (Past 30 Days)
+            🧪 Admin Testing: Top Teams Recent Matches (June 7-10)
           </h2>
           <p className="text-xs text-[var(--muted)] mt-1">
-            Spain, Argentina, France, Portugal, Mexico, USA, Germany, Brazil, Netherlands, Belgium. Live scores update every 2 minutes.
+            Recent matches from top 10 teams. Testing API-Football & cron job. Auto-hides June 10. Live scores every 2 minutes.
           </p>
         </div>
         <div className="flex gap-2">
@@ -251,66 +259,37 @@ export function InternationalFriendlies() {
       )}
 
       {matches.length > 0 && (
-        <div className="space-y-4">
-          {/* Live Matches */}
-          {liveMatches.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-[var(--gold)] mb-2 flex items-center gap-2">
-                🔴 LIVE NOW ({liveMatches.length})
-              </h3>
-              <div className="space-y-2">
-                {liveMatches.map(match => (
-                  <MatchCard key={match.id} match={match} formatTime={formatTime} formatVenueTime={formatVenueTime} />
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="space-y-3">
+          {/* Organize by date, max 5 matches per day */}
+          {Object.entries(byDate).map(([date, dayMatches]) => {
+            // Limit to 5 matches per day (prioritize live, then upcoming, then finished)
+            const displayMatches = [
+              ...dayMatches.filter(m => ["1H", "2H", "ET", "PEN", "LIVE"].includes(m.status.toUpperCase())),
+              ...dayMatches.filter(m => ["NS", "NOT STARTED"].includes(m.status.toUpperCase())),
+              ...dayMatches.filter(m => ["FT", "AET", "PEN", "FINISHED", "ABANDONED"].includes(m.status.toUpperCase())),
+            ].slice(0, 5);
 
-          {/* Upcoming Matches */}
-          {upcomingMatches.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-[var(--text)] mb-2 flex items-center gap-2">
-                ⏱️ UPCOMING ({upcomingMatches.length})
-              </h3>
-              {Object.entries(byDate).map(([date, dayMatches]) => {
-                const upcoming = dayMatches.filter(m =>
-                  ["NS", "NOT STARTED"].includes(m.status.toUpperCase())
-                );
-                if (upcoming.length === 0) return null;
-                return (
-                  <div key={date} className="mb-4">
-                    <h4 className="text-xs font-semibold text-[var(--muted)] mb-2 uppercase">
-                      {date}
-                    </h4>
-                    <div className="space-y-2">
-                      {upcoming.map(match => (
-                        <MatchCard key={match.id} match={match} formatTime={formatTime} formatVenueTime={formatVenueTime} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+            const liveCount = displayMatches.filter(m => ["1H", "2H", "ET", "PEN", "LIVE"].includes(m.status.toUpperCase())).length;
 
-          {/* Finished Matches */}
-          {finishedMatches.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-[var(--muted)] mb-2 flex items-center gap-2">
-                ✓ FINISHED ({finishedMatches.length})
-              </h3>
-              <div className="space-y-2">
-                {finishedMatches.map(match => (
-                  <MatchCard key={match.id} match={match} formatTime={formatTime} formatVenueTime={formatVenueTime} />
-                ))}
+            return (
+              <div key={date}>
+                <h3 className="text-sm font-semibold text-[var(--gold)] mb-2 flex items-center gap-2">
+                  {liveCount > 0 ? "🔴" : "📅"} {date}
+                  {liveCount > 0 && <span className="text-xs text-[var(--gold)]">({liveCount} live)</span>}
+                </h3>
+                <div className="space-y-2">
+                  {displayMatches.map(match => (
+                    <MatchCard key={match.id} match={match} formatTime={formatTime} formatVenueTime={formatVenueTime} />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })}
         </div>
       )}
 
       <div className="text-[10px] text-[var(--muted)] mt-4 pt-3 border-t border-[var(--border)]">
-        💡 Watch how top contenders are performing. Scores update every 2 minutes via cron job syncing with API-Football.
+        💡 Testing API-Football integration with 5 daily matches (June 7-10). Scores update every 2 minutes. Auto-hides June 10.
       </div>
     </div>
   );
