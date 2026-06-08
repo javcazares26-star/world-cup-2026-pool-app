@@ -20,10 +20,10 @@ type Match = {
 };
 
 /**
- * International Friendlies (June 3-10, 2026)
+ * International Matches (June 3-10, 2026)
  *
- * Displays national team friendly matches in the week before the World Cup.
- * Shows how teams are preparing for the tournament.
+ * Displays all national team matches in the week before the World Cup.
+ * Shows how teams are preparing for the tournament (friendlies, qualifiers, etc).
  * Also serves as a test for API-Football live scores and cron job syncing.
  *
  * Visible to all pool participants.
@@ -126,10 +126,10 @@ export function InternationalFriendlies() {
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="font-bold text-lg flex items-center gap-2">
-            ⚽ International Friendlies (June 3-10)
+            ⚽ International Matches (June 3-10)
           </h2>
           <p className="text-xs text-[var(--muted)] mt-1">
-            National teams preparing for the 2026 World Cup. Live scores update every 2 minutes.
+            National teams preparing for World Cup 2026. Friendlies, qualifiers & more. Live scores update every 2 minutes.
           </p>
         </div>
         <div className="flex gap-2">
@@ -175,7 +175,7 @@ export function InternationalFriendlies() {
 
       {!loading && matches.length === 0 && !error && (
         <div className="text-center py-6 text-sm text-[var(--muted)]">
-          No friendly matches scheduled yet.
+          No international matches found for June 3-10. Checking API-Football for available data...
         </div>
       )}
 
@@ -245,7 +245,7 @@ export function InternationalFriendlies() {
       )}
 
       <div className="text-[10px] text-[var(--muted)] mt-4 pt-3 border-t border-[var(--border)]">
-        💡 Watch how national teams prepare for the tournament. Scores update every 2 minutes via our live data pipeline.
+        💡 Watch national teams prepare for the World Cup. Scores update every 2 minutes via cron job syncing with API-Football.
       </div>
     </div>
   );

@@ -47,13 +47,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Filter for international friendly matches (league name contains "International" or specific IDs)
-    const matches = json.response.filter((m: any) => {
-      const league = (m.league?.name || "").toLowerCase();
-      const leagueId = m.league?.id;
-      // Include international friendlies (league ID 680 is international friendlies)
-      return league.includes("friendly") || leagueId === 680;
-    });
+    // Get all matches in the date range
+    // (includes international friendlies, qualifiers, and any national team matches)
+    const matches = json.response || [];
 
     // Transform to simpler format
     const transformed = matches.map((m: any) => ({
