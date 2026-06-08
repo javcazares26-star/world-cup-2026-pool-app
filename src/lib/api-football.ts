@@ -103,3 +103,61 @@ export async function fetchLiveFixtures(): Promise<FixtureUpsert[]> {
   const json = await res.json();
   return (json.response ?? []).map(normalize);
 }
+
+/**
+ * Fetch squad (players) for a team from API-Football.
+ *
+ * Response shape:
+ * {
+ *   "team": { "id": 1, "name": "Argentina", "logo": "..." },
+ *   "players": [
+ *     {
+ *       "id": 1,
+ *       "name": "Player Name",
+ *       "number": 10,
+ *       "position": "Midfielder",
+ *       "photo": "https://..."
+ *     }
+ *   ]
+ * }
+ */
+export async function fetchTeamSquad(teamId: number): Promise<{
+  team: { id: number; name: string; logo: string };
+  players: Array<{
+    id: number;
+    name: string;
+    number: number | null;
+    position: string;
+    photo: string | null;
+  }>;
+} | null> {
+  const key = process.env.API_FOOTBALL_KEY;
+  const season = process.env.API_FOOTBALL_SEASON ?? "2026";
+  if (!key) throw new Error("API_FOOTBALL_KEY not set");
+
+  const res = await fetch(
+    `${BASE}/players/squads?team=${teamId}&season=${season}`,
+    {
+      headers: { "x-apisports-key": key },
+      next: { revalidate: 3600 }, // Cache for 1 hour; squads change rarely
+    }
+  );
+  if (!res.ok) {
+    console.error(`API-Football squad fetch failed for team ${teamId}: ${res.status}`);
+    return null;
+  }
+  const json = await res.json();
+  const response = json.response?.[0];
+  if (!response) return null;
+
+  return {
+    team: response.team,
+    players: (response.players ?? []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      number: p.number ?? null,
+      position: p.position ?? "Unknown",
+      photo: p.photo ?? null,
+    })),
+  };
+}

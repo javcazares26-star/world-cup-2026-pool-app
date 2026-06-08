@@ -11,6 +11,7 @@ import { Teams } from "./_Teams";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { WinnerPick } from "./_WinnerPick";
+import { TestingAPIFootball } from "./_TestingAPIFootball";
 import type { Message } from "@/lib/types";
 
 export type { Member, OwnedPoolRef } from "./_Admin";
@@ -132,6 +133,9 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   return (
     <>
       <Kpis stats={myStats} rank={myRank} live={liveCount} />
+
+      {/* Temporary: Testing API-Football integration (admin only, auto-disabled June 10, 2026) */}
+      {isOwner && <TestingAPIFootball fixtures={fixtures} />}
 
       <nav className="card !p-1.5 flex gap-1 my-4 overflow-x-auto">
         {([

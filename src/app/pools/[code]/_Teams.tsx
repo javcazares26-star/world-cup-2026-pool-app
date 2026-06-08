@@ -14,8 +14,9 @@ type TeamMeta = {
   group: string;
   team: string;
   flag: string;
-  searchName: string;     // name used to search TheSportsDB
-  sportsdbId?: string;    // optional known TheSportsDB id (bypasses search ambiguity)
+  searchName: string;     // name used to search TheSportsDB (legacy, may not be used)
+  sportsdbId?: string;    // legacy: optional known TheSportsDB id
+  apiFootballId?: number; // API-Football team ID (populated from fixtures)
 };
 
 /* ===========================================================================
@@ -103,12 +104,30 @@ const ALL_TEAMS: TeamMeta[] = [
 export function Teams({ fixtures }: { fixtures: Fixture[] }) {
   const [openTeam, setOpenTeam] = useState<string | null>(null);
 
+  // Build a mapping from team name to API-Football team ID from fixtures
+  const teamIdMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    fixtures.forEach(f => {
+      if (f.home_team && f.home_team_id) map[f.home_team] = f.home_team_id;
+      if (f.away_team && f.away_team_id) map[f.away_team] = f.away_team_id;
+    });
+    return map;
+  }, [fixtures]);
+
+  // Enrich ALL_TEAMS with API-Football IDs
+  const teamsWithIds = useMemo(() => {
+    return ALL_TEAMS.map(t => ({
+      ...t,
+      apiFootballId: teamIdMap[t.team],
+    }));
+  }, [teamIdMap]);
+
   // Group teams by group letter
   const byGroup = useMemo(() => {
     const out: Record<string, TeamMeta[]> = {};
-    ALL_TEAMS.forEach(t => { (out[t.group] ??= []).push(t); });
+    teamsWithIds.forEach(t => { (out[t.group] ??= []).push(t); });
     return out;
-  }, []);
+  }, [teamsWithIds]);
 
   return (
     <div>
@@ -118,7 +137,7 @@ export function Teams({ fixtures }: { fixtures: Fixture[] }) {
           All 48 teams in the 2026 FIFA World Cup. Click any team to see their squad.
         </p>
         <p className="text-[10px] text-[var(--muted)] mt-2 opacity-70">
-          Player photos from TheSportsDB (community-edited). Coverage and accuracy vary by team — biggest national sides like Argentina, Brazil, France, England, Germany, Mexico, USA have the most complete data.
+          Player data from API-Football. High-quality photos and official squad lists.
         </p>
       </div>
 
@@ -185,57 +204,41 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
 
     async function load() {
       try {
-        let teamId = team.sportsdbId;
-
-        // If we don't have a known ID, search and filter to international team
-        if (!teamId) {
-          const teamRes = await fetch(
-            `https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=${encodeURIComponent(team.searchName)}`
-          );
-          const teamJson = await teamRes.json();
-          const candidates = teamJson.teams ?? [];
-
-          // Prefer soccer national teams. Look for telltales: league "International",
-          // description mentioning "national team", or stadium with national context.
-          const isLikelyNational = (t: any) => {
-            const sport = (t.strSport ?? "").toLowerCase();
-            if (sport !== "soccer") return false;
-            const league = (t.strLeague ?? "").toLowerCase();
-            const desc = (t.strDescriptionEN ?? "").toLowerCase();
-            return league.includes("international")
-                || league.includes("world cup")
-                || desc.includes("national team")
-                || desc.includes("national football")
-                || /\b(senior|national)\b/.test(desc);
-          };
-
-          const national = candidates.find(isLikelyNational);
-          const fallbackSoccer = candidates.find((t: any) =>
-            (t.strSport ?? "").toLowerCase() === "soccer"
-          );
-          const teamObj = national || fallbackSoccer;
-          if (!teamObj) {
-            if (!cancelled) { setErr("notfound"); setLoading(false); }
-            return;
-          }
-          teamId = teamObj.idTeam;
+        // If we don't have an API-Football team ID, we can't fetch the squad
+        if (!team.apiFootballId) {
+          if (!cancelled) { setErr("notfound"); setLoading(false); }
+          return;
         }
 
-        // Fetch all players for that team
-        const playersRes = await fetch(
-          `https://www.thesportsdb.com/api/v1/json/3/lookup_all_players.php?id=${teamId}`
+        // Fetch squad from our server API (which calls API-Football)
+        const res = await fetch(
+          `/api/teams/squad?teamId=${team.apiFootballId}`
         );
-        const playersJson = await playersRes.json();
-        const raw = playersJson.player ?? [];
-        const mapped: Player[] = raw
-          .filter((p: any) => !p.strSport || p.strSport.toLowerCase() === "soccer")
+        if (!res.ok) {
+          if (!cancelled) { setErr("notfound"); setLoading(false); }
+          return;
+        }
+
+        const data = await res.json();
+        const squadData = data as {
+          team: { id: number; name: string; logo: string };
+          players: Array<{
+            id: number;
+            name: string;
+            number: number | null;
+            position: string;
+            photo: string | null;
+          }>;
+        };
+
+        // Transform to Player format and sort by number
+        const mapped: Player[] = (squadData.players ?? [])
           .map((p: any) => ({
-            id: p.idPlayer,
-            name: p.strPlayer,
-            position: p.strPosition ?? null,
-            // Prefer cutout (transparent bg), fall back to thumb
-            cutout: p.strCutout || p.strThumb || null,
-            number: p.strNumber ?? null,
+            id: String(p.id),
+            name: p.name,
+            position: p.position ?? null,
+            cutout: p.photo ?? null, // API-Football provides 'photo' field
+            number: p.number ? String(p.number) : null,
           }))
           .sort((a: Player, b: Player) => {
             const an = parseInt(a.number ?? "999", 10);
@@ -243,6 +246,7 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
             if (an !== bn) return an - bn;
             return a.name.localeCompare(b.name);
           });
+
         if (!cancelled) { setPlayers(mapped); setLoading(false); }
       } catch (e: any) {
         if (!cancelled) { setErr("network"); setLoading(false); }
@@ -250,7 +254,7 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
     }
     load();
     return () => { cancelled = true; };
-  }, [team.searchName, team.sportsdbId]);
+  }, [team.apiFootballId]);
 
   return (
     <div className="border-t border-[var(--border)] bg-[var(--card-2)] p-4">
@@ -272,15 +276,15 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
         <div className="text-center py-6 text-sm text-[var(--muted)]">
           Squad data not available yet for {team.team}.
           <div className="text-[10px] mt-1 opacity-70">
-            TheSportsDB (our free data source) doesn't have a national team entry for this country yet.
-            We'll show photos once they're added — or switch to API-Football for fuller coverage.
+            API-Football hasn't indexed this team's squad yet, or the fixtures table hasn't synced.
+            Try refreshing the page after the next cron sync.
           </div>
         </div>
       )}
 
       {err === "network" && (
         <div className="text-center py-6 text-sm text-[var(--muted)]">
-          Couldn't reach TheSportsDB. Check your connection and try again.
+          Network error loading squad. Check your connection and try again.
         </div>
       )}
 
@@ -290,7 +294,7 @@ function Squad({ team, onClose }: { team: TeamMeta; onClose: () => void }) {
             {players.map(p => <PlayerCard key={p.id} player={p} />)}
           </div>
           <div className="text-[10px] text-[var(--muted)] mt-3 text-right">
-            {players.length} player{players.length === 1 ? "" : "s"} · photos via TheSportsDB
+            {players.length} player{players.length === 1 ? "" : "s"} · data via API-Football
           </div>
         </>
       )}
