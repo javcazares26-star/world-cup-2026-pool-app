@@ -7,7 +7,6 @@ import { Leaderboard } from "./_Leaderboard";
 import { Kpis } from "./_Kpis";
 import { FairPlay } from "./_FairPlay";
 import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
-import { Teams } from "./_Teams";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { WinnerPick } from "./_WinnerPick";
@@ -142,7 +141,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           ["winner", "🏆 Winner"],
           ["picks", "📝 Picks"],
           ["fairplay", "📊 Groups Live"],
-          ["teams", "🧑‍🤝‍🧑 Teams"],
           ["members", "👥 Members"],
           ["leaderboard", "🥇 Leaderboard"],
           ...(isOwner ? [["admin", "⚙️ Admin"]] : []),
@@ -266,10 +264,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
 
       {tab === "fairplay" && (
         <FairPlay fixtures={fixtures} picks={picks} />
-      )}
-
-      {tab === "teams" && (
-        <Teams fixtures={fixtures} />
       )}
 
       {tab === "members" && (

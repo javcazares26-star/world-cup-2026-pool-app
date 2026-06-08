@@ -8,10 +8,8 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get("days") || "30", 10);
-
-    // Major national teams to monitor
-    const TEAMS = ["Spain", "Argentina", "France", "Portugal", "Mexico", "USA", "Germany", "Brazil", "Netherlands", "Belgium"];
+    const fromDate = searchParams.get("from");
+    const toDate = searchParams.get("to");
 
     const BASE = "https://v3.football.api-sports.io";
     const key = process.env.API_FOOTBALL_KEY;
@@ -19,22 +17,24 @@ export async function GET(request: NextRequest) {
     if (!key) {
       console.error("API_FOOTBALL_KEY not configured");
       return NextResponse.json(
-        { matches: [], days, count: 0 },
+        { matches: [], from: fromDate, to: toDate, count: 0 },
         { status: 200 }
       );
     }
 
-    // Calculate date range (past N days)
-    const toDate = new Date();
-    const fromDate = new Date();
-    fromDate.setDate(fromDate.getDate() - days);
+    if (!fromDate || !toDate) {
+      console.error("Missing from or to date");
+      return NextResponse.json(
+        { matches: [], from: fromDate, to: toDate, count: 0 },
+        { status: 200 }
+      );
+    }
 
-    const from = fromDate.toISOString().split("T")[0];
-    const to = toDate.toISOString().split("T")[0];
+    console.log(`Fetching all matches from ${fromDate} to ${toDate}`);
 
-    // Fetch all matches in the date range
+    // Fetch ALL matches in the date range (no team filter)
     const res = await fetch(
-      `${BASE}/fixtures?dateFrom=${from}&dateTo=${to}`,
+      `${BASE}/fixtures?dateFrom=${fromDate}&dateTo=${toDate}`,
       {
         headers: { "x-apisports-key": key },
         cache: "no-store",
@@ -44,25 +44,23 @@ export async function GET(request: NextRequest) {
     if (!res.ok) {
       console.error(`API-Football returned ${res.status}: ${res.statusText}`);
       return NextResponse.json(
-        { matches: [], days, count: 0 },
+        { matches: [], from: fromDate, to: toDate, count: 0 },
         { status: 200 }
       );
     }
 
     const json = await res.json();
     if (!json || !json.response || !Array.isArray(json.response)) {
+      console.warn("No matches found in API response");
       return NextResponse.json(
-        { matches: [], days, count: 0 },
+        { matches: [], from: fromDate, to: toDate, count: 0 },
         { status: 200 }
       );
     }
 
-    // Filter for matches involving our target teams
-    const matches = json.response.filter((m: any) => {
-      const homeTeam = m.teams?.home?.name || "";
-      const awayTeam = m.teams?.away?.name || "";
-      return TEAMS.includes(homeTeam) || TEAMS.includes(awayTeam);
-    });
+    // Get all matches (no filtering)
+    const matches = json.response || [];
+    console.log(`Found ${matches.length} total matches`);
 
     // Transform to simpler format
     const transformed = matches.map((m: any) => ({
@@ -84,13 +82,11 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({
-      from,
-      to,
-      days,
+      from: fromDate,
+      to: toDate,
       count: transformed.length,
-      teams: TEAMS,
       matches: transformed.sort((a: any, b: any) =>
-        new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime()
+        new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()
       ),
     });
   } catch (err: any) {

@@ -20,9 +20,9 @@ type Match = {
 };
 
 /**
- * Admin Testing: Top Teams Recent Matches (June 7-10)
+ * Admin Testing: All Soccer Matches (Today through June 10)
  *
- * Shows 5 recent matches per day from the top 10 World Cup teams.
+ * Shows all soccer matches happening today through June 10.
  * Helps test API-Football integration and cron job syncing.
  *
  * Admin-only. Auto-hides on June 10, 2026.
@@ -47,8 +47,13 @@ export function InternationalFriendlies({ isPoolOwner }: { isPoolOwner: boolean 
     try {
       setError(null);
       setLoading(true);
+      // Get today's date and June 10
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0];
+      const june10 = "2026-06-10";
+
       const res = await fetch(
-        "/api/matches/teams?days=30",
+        `/api/matches/teams?from=${todayStr}&to=${june10}`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -199,10 +204,10 @@ export function InternationalFriendlies({ isPoolOwner }: { isPoolOwner: boolean 
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="font-bold text-lg flex items-center gap-2">
-            🧪 Admin Testing: Top Teams Recent Matches (June 7-10)
+            🧪 All Soccer Matches (Today - June 10)
           </h2>
           <p className="text-xs text-[var(--muted)] mt-1">
-            Recent matches from top 10 teams. Testing API-Football & cron job. Auto-hides June 10. Live scores every 2 minutes.
+            All soccer matches worldwide. Testing API-Football & cron job. Auto-hides June 10. Live scores every 2 minutes.
           </p>
         </div>
         <div className="flex gap-2">
