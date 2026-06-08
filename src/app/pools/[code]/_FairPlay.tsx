@@ -1,6 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import type { Fixture, Pick } from "@/lib/types";
+import { getTeamFlag } from "@/lib/team-flags";
 
 type Standing = {
   team: string;
@@ -164,7 +165,10 @@ export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick
                             {i + 1}
                           </span>
                         </td>
-                        <td className="p-2 font-medium">{r.team}</td>
+                        <td className="p-2 font-medium flex items-center gap-2">
+                          <span>{getTeamFlag(r.team)}</span>
+                          {r.team}
+                        </td>
                         <td className="p-2 text-center">{r.mp}</td>
                         <td className="p-2 text-center text-[var(--pitch-light)]">{r.w}</td>
                         <td className="p-2 text-center">{r.d}</td>
