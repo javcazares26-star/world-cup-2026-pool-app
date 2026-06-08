@@ -20,12 +20,12 @@ type Match = {
 };
 
 /**
- * International Matches (June 3-10, 2026)
+ * Top Teams Recent Matches
  *
- * Displays all national team matches in the week before the World Cup.
- * Shows how teams are preparing for the tournament (friendlies, qualifiers, etc).
- * Also serves as a test for API-Football live scores and cron job syncing.
+ * Displays recent matches from the past 15 days for major World Cup contenders:
+ * Spain, Argentina, France, Portugal, Mexico, USA, Germany, Brazil, Netherlands, Belgium
  *
+ * Shows recent form and test API-Football live scores and cron job syncing.
  * Visible to all pool participants.
  */
 export function InternationalFriendlies() {
@@ -40,7 +40,7 @@ export function InternationalFriendlies() {
       setError(null);
       setLoading(true);
       const res = await fetch(
-        "/api/matches/friendlies?from=2026-06-03&to=2026-06-10",
+        "/api/matches/teams?days=15",
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -126,10 +126,10 @@ export function InternationalFriendlies() {
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="font-bold text-lg flex items-center gap-2">
-            ⚽ International Matches (June 3-10)
+            ⚽ Top Teams Recent Matches (Past 15 Days)
           </h2>
           <p className="text-xs text-[var(--muted)] mt-1">
-            National teams preparing for World Cup 2026. Friendlies, qualifiers & more. Live scores update every 2 minutes.
+            Spain, Argentina, France, Portugal, Mexico, USA, Germany, Brazil, Netherlands, Belgium. Live scores update every 2 minutes.
           </p>
         </div>
         <div className="flex gap-2">
@@ -175,7 +175,7 @@ export function InternationalFriendlies() {
 
       {!loading && matches.length === 0 && !error && (
         <div className="text-center py-6 text-sm text-[var(--muted)]">
-          No international matches found for June 3-10. Checking API-Football for available data...
+          No recent matches found for these teams in the past 15 days.
         </div>
       )}
 
@@ -245,7 +245,7 @@ export function InternationalFriendlies() {
       )}
 
       <div className="text-[10px] text-[var(--muted)] mt-4 pt-3 border-t border-[var(--border)]">
-        💡 Watch national teams prepare for the World Cup. Scores update every 2 minutes via cron job syncing with API-Football.
+        💡 Watch how top contenders are performing. Scores update every 2 minutes via cron job syncing with API-Football.
       </div>
     </div>
   );
