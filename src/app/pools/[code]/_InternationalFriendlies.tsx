@@ -40,7 +40,7 @@ export function InternationalFriendlies() {
       setError(null);
       setLoading(true);
       const res = await fetch(
-        "/api/matches/teams?days=15",
+        "/api/matches/teams?days=30",
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -102,12 +102,77 @@ export function InternationalFriendlies() {
     byDate[date].push(m);
   });
 
+  // Map World Cup 2026 venue cities to their timezones
+  // Venues are in USA, Mexico, and Canada
+  const VENUE_TIMEZONES: Record<string, string> = {
+    // USA - Eastern Time
+    "Boston": "America/New_York",
+    "Miami": "America/New_York",
+    "New York": "America/New_York",
+    "Washington": "America/New_York",
+    "Philadelphia": "America/New_York",
+    "Atlanta": "America/New_York",
+    "Nashville": "America/Chicago",
+    "Charlotte": "America/New_York",
+
+    // USA - Central Time
+    "Dallas": "America/Chicago",
+    "Houston": "America/Chicago",
+    "Kansas City": "America/Chicago",
+    "Chicago": "America/Chicago",
+    "New Orleans": "America/Chicago",
+    "Austin": "America/Chicago",
+    "San Antonio": "America/Chicago",
+    "Memphis": "America/Chicago",
+
+    // USA - Mountain Time
+    "Denver": "America/Denver",
+    "Salt Lake City": "America/Denver",
+    "Phoenix": "America/Phoenix",
+
+    // USA - Pacific Time
+    "Los Angeles": "America/Los_Angeles",
+    "San Francisco": "America/Los_Angeles",
+    "Seattle": "America/Los_Angeles",
+    "Las Vegas": "America/Los_Angeles",
+    "San Diego": "America/Los_Angeles",
+
+    // Mexico
+    "Mexico City": "America/Mexico_City",
+    "Guadalajara": "America/Mexico_City",
+    "Monterrey": "America/Mexico_City",
+    "Puebla": "America/Mexico_City",
+    "Toluca": "America/Mexico_City",
+    "Zapopan": "America/Mexico_City",
+
+    // Canada - Eastern Time
+    "Toronto": "America/Toronto",
+    "Montreal": "America/Toronto",
+    "Ottawa": "America/Toronto",
+    "Vancouver": "America/Vancouver",
+
+    // Canada - Mountain Time
+    "Calgary": "America/Edmonton",
+    "Edmonton": "America/Edmonton",
+  };
+
   const formatTime = (isoString: string): string => {
     const date = new Date(isoString);
     return date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: "UTC",
+    });
+  };
+
+  // Format time in the venue's local timezone
+  const formatVenueTime = (isoString: string, venue: string): string => {
+    const tz = VENUE_TIMEZONES[venue] || VENUE_TIMEZONES["Dallas"]; // Default to Dallas/Central
+    const date = new Date(isoString);
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: tz,
     });
   };
 
@@ -126,7 +191,7 @@ export function InternationalFriendlies() {
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="font-bold text-lg flex items-center gap-2">
-            ⚽ Top Teams Recent Matches (Past 15 Days)
+            ⚽ Top Teams Recent Matches (Past 30 Days)
           </h2>
           <p className="text-xs text-[var(--muted)] mt-1">
             Spain, Argentina, France, Portugal, Mexico, USA, Germany, Brazil, Netherlands, Belgium. Live scores update every 2 minutes.
@@ -195,7 +260,7 @@ export function InternationalFriendlies() {
               </h3>
               <div className="space-y-2">
                 {liveMatches.map(match => (
-                  <MatchCard key={match.id} match={match} formatTime={formatTime} />
+                  <MatchCard key={match.id} match={match} formatTime={formatTime} formatVenueTime={formatVenueTime} />
                 ))}
               </div>
             </div>
@@ -219,7 +284,7 @@ export function InternationalFriendlies() {
                     </h4>
                     <div className="space-y-2">
                       {upcoming.map(match => (
-                        <MatchCard key={match.id} match={match} formatTime={formatTime} />
+                        <MatchCard key={match.id} match={match} formatTime={formatTime} formatVenueTime={formatVenueTime} />
                       ))}
                     </div>
                   </div>
@@ -236,7 +301,7 @@ export function InternationalFriendlies() {
               </h3>
               <div className="space-y-2">
                 {finishedMatches.map(match => (
-                  <MatchCard key={match.id} match={match} formatTime={formatTime} />
+                  <MatchCard key={match.id} match={match} formatTime={formatTime} formatVenueTime={formatVenueTime} />
                 ))}
               </div>
             </div>
@@ -251,7 +316,7 @@ export function InternationalFriendlies() {
   );
 }
 
-function MatchCard({ match, formatTime }: { match: Match; formatTime: (iso: string) => string }) {
+function MatchCard({ match, formatTime, formatVenueTime }: { match: Match; formatTime: (iso: string) => string; formatVenueTime: (iso: string, venue: string) => string }) {
   const isLive = ["1H", "2H", "ET", "PEN", "LIVE"].includes(match.status.toUpperCase());
   const isFinished = ["FT", "AET", "PEN", "FINISHED"].includes(match.status.toUpperCase());
 
@@ -295,9 +360,10 @@ function MatchCard({ match, formatTime }: { match: Match; formatTime: (iso: stri
           <div className="text-sm font-semibold truncate">{match.awayTeam}</div>
         </div>
 
-        {/* Time */}
+        {/* Time - Show venue's local time */}
         <div className="text-right">
-          <div className="text-[10px] text-[var(--muted)]">{formatTime(match.kickoff)} UTC</div>
+          <div className="text-[10px] font-semibold">{formatVenueTime(match.kickoff, match.country)}</div>
+          <div className="text-[10px] text-[var(--muted)]">{match.country}</div>
         </div>
       </div>
     </div>

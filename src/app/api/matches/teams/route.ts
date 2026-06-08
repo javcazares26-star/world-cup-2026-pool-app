@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const days = parseInt(searchParams.get("days") || "15", 10);
+    const days = parseInt(searchParams.get("days") || "30", 10);
 
     // Major national teams to monitor
     const TEAMS = ["Spain", "Argentina", "France", "Portugal", "Mexico", "USA", "Germany", "Brazil", "Netherlands", "Belgium"];
