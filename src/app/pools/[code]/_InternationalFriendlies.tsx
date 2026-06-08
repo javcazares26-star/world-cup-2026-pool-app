@@ -65,10 +65,13 @@ export function InternationalFriendlies({ isPoolOwner }: { isPoolOwner: boolean 
       }
 
       const data = await res.json();
+      console.log("Matches API response:", data);
+
       if (!data || typeof data !== "object") {
         throw new Error("Invalid response format");
       }
 
+      console.log(`Received ${data.matches?.length || 0} matches from API`);
       setMatches(Array.isArray(data.matches) ? data.matches : []);
       setLastRefresh(new Date());
       setLoading(false);
