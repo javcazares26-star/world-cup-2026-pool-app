@@ -1,21 +1,44 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { Fixture } from "@/lib/types";
+
+type Match = {
+  id: number;
+  status: string;
+  statusLong: string;
+  kickoff: string;
+  minute: number | null;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  league: string;
+  leagueId: number;
+  season: number;
+  round: string | null;
+  venue: string;
+  country: string;
+};
 
 /**
- * Testing API-Football Integration
+ * Testing API-Football Integration (Admin Only)
  *
- * Temporarily displays live matches happening today to verify:
- * - API-Football fixtures are syncing correctly
+ * Displays all soccer matches happening today worldwide (any league, club, or national team)
+ * to test and verify:
+ * - API-Football connectivity and data freshness
  * - Cron job is updating scores in real-time
- * - Data pipeline is working end-to-end
+ * - Live score updates across multiple matches simultaneously
+ * - Data pipeline end-to-end functionality
  *
  * Auto-hides on June 10, 2026 (one day before tournament starts).
  * Can be manually disabled by the user.
  */
-export function TestingAPIFootball({ fixtures }: { fixtures: Fixture[] }) {
+export function TestingAPIFootball() {
   const [isVisible, setIsVisible] = useState(true);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
   // Auto-disable on June 10, 2026 at 00:00 UTC
   const DISABLE_DATE = new Date("2026-06-10T00:00:00Z");
@@ -25,42 +48,45 @@ export function TestingAPIFootball({ fixtures }: { fixtures: Fixture[] }) {
     return null;
   }
 
-  // Get today's date (start and end of day in UTC)
-  const now = new Date();
-  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
-  const todayEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59));
+  const fetchMatches = async () => {
+    try {
+      setError(null);
+      const res = await fetch("/api/matches/today");
+      if (!res.ok) throw new Error("Failed to fetch matches");
+      const data = await res.json();
+      setMatches(data.matches || []);
+      setLastRefresh(new Date());
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
-  // Filter fixtures for today
-  const todaysMatches = fixtures.filter(f => {
-    const kickoff = new Date(f.kickoff_utc);
-    return kickoff >= todayStart && kickoff <= todayEnd;
-  });
+  // Initial fetch
+  useEffect(() => {
+    fetchMatches();
+  }, []);
 
-  // Sort by kickoff time
-  const sortedMatches = [...todaysMatches].sort((a, b) =>
-    new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime()
-  );
+  // Auto-refresh every 2 minutes if enabled (matches cron job cadence)
+  useEffect(() => {
+    if (!autoRefreshEnabled) return;
+    const interval = setInterval(fetchMatches, 2 * 60 * 1000); // 2 minutes
+    return () => clearInterval(interval);
+  }, [autoRefreshEnabled]);
 
   // Categorize matches
-  const upcomingMatches = sortedMatches.filter(f => {
-    const status = f.status_short?.toLowerCase() || "";
-    return ["not started", "ns"].includes(status);
-  });
+  const liveMatches = matches.filter(m => ["1H", "2H", "ET", "PEN", "LIVE"].includes(m.status.toUpperCase()));
+  const upcomingMatches = matches.filter(m => ["NS", "NOT STARTED"].includes(m.status.toUpperCase()));
+  const finishedMatches = matches.filter(m => ["FT", "AET", "PEN", "FINISHED", "ABANDONED"].includes(m.status.toUpperCase()));
 
-  const liveMatches = sortedMatches.filter(f => {
-    const status = f.status_short?.toLowerCase() || "";
-    return ["live", "1h", "2h", "et", "pen"].includes(status);
-  });
-
-  const finishedMatches = sortedMatches.filter(f => {
-    const status = f.status_short?.toLowerCase() || "";
-    return ["finished", "ft", "aet", "pen"].includes(status);
-  });
-
-  const handleRefresh = () => {
-    setLastRefresh(new Date());
-    // In a real scenario, you could trigger a manual API call here
-  };
+  // Group by league
+  const byLeague = matches.reduce((acc, match) => {
+    const league = match.league;
+    if (!acc[league]) acc[league] = [];
+    acc[league].push(match);
+    return acc;
+  }, {} as Record<string, Match[]>);
 
   const formatTime = (isoString: string): string => {
     const date = new Date(isoString);
@@ -74,22 +100,32 @@ export function TestingAPIFootball({ fixtures }: { fixtures: Fixture[] }) {
 
   return (
     <div className="card bg-gradient-to-r from-[var(--card)] to-[var(--card-2)] border-2 border-dashed border-[var(--gold)] mb-4">
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="font-bold text-lg flex items-center gap-2">
-            🧪 Testing API-Football
+            🧪 Testing API-Football Integration
           </h2>
           <p className="text-xs text-[var(--muted)] mt-1">
-            Monitor live matches and verify cron job syncing. Auto-disabled on June 10, 2026.
+            All soccer matches worldwide happening today. Verifying API connectivity, live scores, and cron job syncing.
           </p>
         </div>
         <div className="flex gap-2">
+          <label className="flex items-center gap-1 text-xs cursor-pointer text-[var(--muted)] hover:text-[var(--text)]">
+            <input
+              type="checkbox"
+              checked={autoRefreshEnabled}
+              onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
+              className="w-4 h-4"
+            />
+            Auto-refresh (2 min)
+          </label>
           <button
-            onClick={handleRefresh}
+            onClick={fetchMatches}
+            disabled={loading}
             className="btn !py-1 !px-3 text-xs"
-            title="Manually refresh match data from database"
+            title="Manually refresh all matches from API-Football"
           >
-            🔄 Refresh
+            {loading ? "…" : "🔄 Refresh"}
           </button>
           <button
             onClick={() => setIsVisible(false)}
@@ -102,27 +138,45 @@ export function TestingAPIFootball({ fixtures }: { fixtures: Fixture[] }) {
       </div>
 
       {lastRefresh && (
-        <div className="text-[10px] text-[var(--muted)] mb-2">
-          Last refresh: {lastRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })} UTC
+        <div className="text-[10px] text-[var(--muted)] mb-3 pb-3 border-b border-[var(--border)]">
+          Last synced: {lastRefresh.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })} UTC
+          <span className="mx-2">•</span>
+          Total matches: <strong>{matches.length}</strong>
+          <span className="mx-2">•</span>
+          Live: <strong>{liveMatches.length}</strong>
+          <span className="mx-2">•</span>
+          Leagues: <strong>{Object.keys(byLeague).length}</strong>
         </div>
       )}
 
-      {sortedMatches.length === 0 && (
+      {error && (
+        <div className="text-center py-4 text-sm text-[var(--crimson)]">
+          ⚠ Error: {error}
+        </div>
+      )}
+
+      {!loading && matches.length === 0 && !error && (
         <div className="text-center py-6 text-sm text-[var(--muted)]">
           No matches scheduled for today ({formatDate(new Date().toISOString())}).
           <div className="text-[10px] mt-1 opacity-70">
-            Tournament starts June 11, 2026. Check back later or trigger a manual cron sync.
+            API-Football integration is working! Check back when there are matches.
           </div>
         </div>
       )}
 
-      {sortedMatches.length > 0 && (
-        <div className="space-y-3">
+      {loading && matches.length === 0 && (
+        <div className="text-center py-6 text-sm text-[var(--muted)]">
+          Loading matches from API-Football…
+        </div>
+      )}
+
+      {matches.length > 0 && (
+        <div className="space-y-4">
           {/* Live Matches */}
           {liveMatches.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-[var(--gold)] mb-2">
-                🔴 LIVE ({liveMatches.length})
+              <h3 className="text-sm font-semibold text-[var(--gold)] mb-2 flex items-center gap-2">
+                🔴 LIVE NOW ({liveMatches.length})
               </h3>
               <div className="space-y-2">
                 {liveMatches.map(match => (
@@ -135,7 +189,7 @@ export function TestingAPIFootball({ fixtures }: { fixtures: Fixture[] }) {
           {/* Upcoming Matches */}
           {upcomingMatches.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-[var(--text)] mb-2">
+              <h3 className="text-sm font-semibold text-[var(--text)] mb-2 flex items-center gap-2">
                 ⏱️ UPCOMING ({upcomingMatches.length})
               </h3>
               <div className="space-y-2">
@@ -149,10 +203,10 @@ export function TestingAPIFootball({ fixtures }: { fixtures: Fixture[] }) {
           {/* Finished Matches */}
           {finishedMatches.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-[var(--muted)] mb-2">
+              <h3 className="text-sm font-semibold text-[var(--muted)] mb-2 flex items-center gap-2">
                 ✓ FINISHED ({finishedMatches.length})
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[200px] overflow-y-auto">
                 {finishedMatches.map(match => (
                   <MatchCard key={match.id} match={match} formatTime={formatTime} />
                 ))}
@@ -162,38 +216,36 @@ export function TestingAPIFootball({ fixtures }: { fixtures: Fixture[] }) {
         </div>
       )}
 
-      <div className="text-[10px] text-[var(--muted)] mt-3 pt-3 border-t border-[var(--border)]">
-        💡 Tip: Click refresh every 5 minutes to verify the cron job is updating scores. Check the "Last refresh" timestamp to ensure data is being fetched from the latest sync.
+      <div className="text-[10px] text-[var(--muted)] mt-4 pt-3 border-t border-[var(--border)]">
+        💡 <strong>Testing Tips:</strong> Enable auto-refresh to verify the cron job is syncing scores every 2 minutes. Watch for live matches to update in real-time. Check timestamps to confirm data freshness. This section tests API-Football connectivity, live updates, and the full data pipeline.
       </div>
     </div>
   );
 }
 
-function MatchCard({ match, formatTime }: { match: Fixture; formatTime: (iso: string) => string }) {
-  const status = match.status_short?.toLowerCase() || "";
-  const isLive = ["live", "1h", "2h", "et", "pen"].includes(status);
-  const isFinished = ["finished", "ft", "aet", "pen"].includes(status);
+function MatchCard({ match, formatTime }: { match: Match; formatTime: (iso: string) => string }) {
+  const isLive = ["1H", "2H", "ET", "PEN", "LIVE"].includes(match.status.toUpperCase());
+  const isFinished = ["FT", "AET", "PEN", "FINISHED"].includes(match.status.toUpperCase());
 
   // Determine status display
-  let statusDisplay = match.status || "TBD";
-  if (isLive && match.minute) {
+  let statusDisplay = match.statusLong || "TBD";
+  if (isLive && match.minute !== null) {
     statusDisplay = `${match.minute}'`;
   }
 
   return (
     <div className={`p-3 rounded-lg border ${isLive ? "bg-[var(--card-2)] border-[var(--gold)]" : "bg-[var(--card)] border-[var(--border)]"}`}>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 mb-2">
         {/* Home Team */}
-        <div className="flex-1 text-right">
-          <div className="text-sm font-semibold">{match.home_team}</div>
-          <div className="text-xs text-[var(--muted)]">{match.venue || "TBD"}</div>
+        <div className="flex-1 text-right pr-2">
+          <div className="text-sm font-semibold truncate">{match.homeTeam}</div>
         </div>
 
         {/* Score / Status */}
         <div className="px-3 py-2 bg-[var(--bg-2)] rounded text-center min-w-[70px]">
           <div className="text-lg font-bold">
-            {match.home_score !== null && match.away_score !== null
-              ? `${match.home_score} - ${match.away_score}`
+            {match.homeScore !== null && match.awayScore !== null
+              ? `${match.homeScore} - ${match.awayScore}`
               : "- : -"}
           </div>
           <div className={`text-[10px] font-semibold ${isLive ? "text-[var(--gold)]" : isFinished ? "text-[var(--muted)]" : "text-[var(--text)]"}`}>
@@ -202,10 +254,16 @@ function MatchCard({ match, formatTime }: { match: Fixture; formatTime: (iso: st
         </div>
 
         {/* Away Team */}
-        <div className="flex-1 text-left">
-          <div className="text-sm font-semibold">{match.away_team}</div>
-          <div className="text-xs text-[var(--muted)]">{formatTime(match.kickoff_utc)} UTC</div>
+        <div className="flex-1 text-left pl-2">
+          <div className="text-sm font-semibold truncate">{match.awayTeam}</div>
         </div>
+      </div>
+
+      {/* Match Details */}
+      <div className="text-[10px] text-[var(--muted)] flex items-center justify-between px-1">
+        <span>{match.league}</span>
+        <span>{formatTime(match.kickoff)} UTC</span>
+        <span>{match.venue}</span>
       </div>
     </div>
   );

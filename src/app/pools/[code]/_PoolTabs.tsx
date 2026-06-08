@@ -135,7 +135,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       <Kpis stats={myStats} rank={myRank} live={liveCount} />
 
       {/* Temporary: Testing API-Football integration (admin only, auto-disabled June 10, 2026) */}
-      {isOwner && <TestingAPIFootball fixtures={fixtures} />}
+      {isOwner && <TestingAPIFootball />}
 
       <nav className="card !p-1.5 flex gap-1 my-4 overflow-x-auto">
         {([
