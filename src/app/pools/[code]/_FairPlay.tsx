@@ -18,6 +18,11 @@ type Standing = {
 export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick[] }) {
   const finishedStatuses = new Set(["FT", "AET", "PEN"]);
 
+  // Tournament starts June 11, 2026
+  const TOURNAMENT_START = new Date("2026-06-11T00:00:00Z");
+  const isTournamentStarted = new Date() >= TOURNAMENT_START;
+  const daysUntilStart = Math.ceil((TOURNAMENT_START.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
   // === Compute standings: prefer real scores when match is finished; else use the user's pick ===
   const { standingsByGroup, finishedCount, projectedCount } = useMemo(() => {
     const result: Record<string, Standing[]> = {};
@@ -97,33 +102,50 @@ export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick
   const totalCounted = finishedCount + projectedCount;
   const isMostlySimulation = projectedCount > finishedCount;
 
+  // Show pre-tournament message and reset standings if tournament hasn't started
+  const displayStandings = isTournamentStarted ? standingsByGroup :
+    Object.fromEntries(
+      Object.entries(standingsByGroup).map(([group, rows]) => [
+        group,
+        rows.map(r => ({ ...r, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0 }))
+      ])
+    );
+
   return (
     <div>
       <div className="card mb-4">
         <div className="flex items-baseline justify-between gap-3 flex-wrap mb-1">
           <h2 className="text-lg font-bold">Group standings</h2>
           <span className={"text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full " +
-            (isMostlySimulation
+            (!isTournamentStarted
+              ? "bg-[var(--crimson)] text-white"
+              : isMostlySimulation
               ? "bg-[var(--gold)] text-[#1a1408]"
               : "bg-[var(--pitch-light)] text-white")}>
-            {isMostlySimulation ? "🔮 Simulation" : "📡 Live results"}
+            {!isTournamentStarted ? "⏳ Not started" : isMostlySimulation ? "🔮 Simulation" : "📡 Live results"}
           </span>
         </div>
         <p className="text-sm text-[var(--muted)]">
-          {isMostlySimulation ? (
+          {!isTournamentStarted ? (
+            <>Tournament starts <strong>June 11</strong>. All picks reset to 0. Once matches begin, standings will update in real-time.</>
+          ) : isMostlySimulation ? (
             <>Showing projected standings based on <strong>your picks</strong>. Once a match is finished, real scores replace your prediction in the calculation.</>
           ) : (
             <>Standings calculated from real match results. Picks not yet played are filled in with your predictions.</>
           )}
         </p>
         <p className="text-[10px] text-[var(--muted)] mt-2 opacity-80">
-          {finishedCount} finished match{finishedCount === 1 ? "" : "es"} · {projectedCount} projected from your picks · Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.
+          {!isTournamentStarted ? (
+            `Tournament begins in ${daysUntilStart} day${daysUntilStart === 1 ? "" : "s"}. Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.`
+          ) : (
+            `${finishedCount} finished match${finishedCount === 1 ? "" : "es"} · ${projectedCount} projected from your picks · Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.`
+          )}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {groups.map(group => {
-          const rows = standingsByGroup[group];
+          const rows = displayStandings[group];
           const anyCounted = rows.some(r => r.mp > 0);
           return (
             <div key={group} className="card !p-0 overflow-hidden">
