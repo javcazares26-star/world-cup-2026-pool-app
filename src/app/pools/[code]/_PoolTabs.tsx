@@ -10,7 +10,7 @@ import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { WinnerPick } from "./_WinnerPick";
-import { InternationalFriendlies } from "./_InternationalFriendlies";
+import { ApiFootballTest } from "./_ApiFootballTest";
 import type { Message } from "@/lib/types";
 
 export type { Member, OwnedPoolRef } from "./_Admin";
@@ -133,8 +133,8 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
     <>
       <Kpis stats={myStats} rank={myRank} live={liveCount} />
 
-      {/* Admin Testing: Top Teams Recent Matches (June 7-10) */}
-      <InternationalFriendlies isPoolOwner={isOwner} />
+      {/* Admin Testing: API-Football Connectivity */}
+      <ApiFootballTest isPoolOwner={isOwner} />
 
       <nav className="card !p-1.5 flex gap-1 my-4 overflow-x-auto">
         {([
@@ -159,42 +159,68 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
         <WinnerPick pool={pool} userId={userId} fixtures={fixtures} />
       )}
 
-      {tab === "picks" && (
-        <>
-          <div className="card mb-4 border-l-4" style={{ borderLeftColor: "var(--crimson)" }}>
-            <h3 className="font-bold text-sm flex items-center gap-2">
-              🔒 Pool rule — picks lock 5 minutes before kickoff
-            </h3>
-            <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
-              Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. See your picks and live scores in the same place.
-            </p>
-          </div>
+      {tab === "picks" && (() => {
+        // Tournament starts June 11, 2026
+        const TOURNAMENT_START = new Date("2026-06-11T00:00:00Z");
+        const isTournamentStarted = new Date() >= TOURNAMENT_START;
+        const daysUntilStart = Math.ceil((TOURNAMENT_START.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
-          {/* STAGE TOGGLE */}
-          <div className="card !p-2 flex gap-2 mb-4">
-            <button
-              onClick={() => setPicksStage("groups")}
-              className={"px-4 py-2 rounded-lg text-sm font-semibold transition-colors " +
-                (picksStage === "groups"
-                  ? "bg-[var(--gold)] text-[#1a1a1a]"
-                  : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]")}
-            >
-              📋 Groups Stage
-            </button>
-            <button
-              onClick={() => setPicksStage("knockout")}
-              className={"px-4 py-2 rounded-lg text-sm font-semibold transition-colors " +
-                (picksStage === "knockout"
-                  ? "bg-[var(--gold)] text-[#1a1a1a]"
-                  : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]")}
-            >
-              🏆 Knockout Stage
-            </button>
-          </div>
+        if (!isTournamentStarted) {
+          return (
+            <div className="card mb-4 border-l-4 bg-gradient-to-r from-[var(--card)] to-[var(--card-2)]" style={{ borderLeftColor: "var(--crimson)" }}>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-3xl">⏳</span>
+                <div>
+                  <h3 className="font-bold text-lg">Tournament Hasn't Started Yet</h3>
+                  <p className="text-sm text-[var(--muted)]">Picks are locked until June 11, 2026</p>
+                </div>
+              </div>
+              <p className="text-xs text-[var(--muted)] mt-3 leading-relaxed">
+                The World Cup begins on <strong>June 11</strong>. All match picks are reset to 0-0 and will be unlocked for editing starting on June 11. Check back then to make your predictions!
+              </p>
+              <p className="text-[10px] text-[var(--gold)] mt-3 font-semibold">
+                🎯 Tournament starts in {daysUntilStart} day{daysUntilStart === 1 ? "" : "s"}
+              </p>
+            </div>
+          );
+        }
 
-          {/* GROUPS STAGE SECTION */}
-          {picksStage === "groups" && (
-          <div className="mb-6">
+        return (
+          <>
+            <div className="card mb-4 border-l-4" style={{ borderLeftColor: "var(--crimson)" }}>
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                🔒 Pool rule — picks lock 5 minutes before kickoff
+              </h3>
+              <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+                Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. See your picks and live scores in the same place.
+              </p>
+            </div>
+
+            {/* STAGE TOGGLE */}
+            <div className="card !p-2 flex gap-2 mb-4">
+              <button
+                onClick={() => setPicksStage("groups")}
+                className={"px-4 py-2 rounded-lg text-sm font-semibold transition-colors " +
+                  (picksStage === "groups"
+                    ? "bg-[var(--gold)] text-[#1a1a1a]"
+                    : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]")}
+              >
+                📋 Groups Stage
+              </button>
+              <button
+                onClick={() => setPicksStage("knockout")}
+                className={"px-4 py-2 rounded-lg text-sm font-semibold transition-colors " +
+                  (picksStage === "knockout"
+                    ? "bg-[var(--gold)] text-[#1a1a1a]"
+                    : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]")}
+              >
+                🏆 Knockout Stage
+              </button>
+            </div>
+
+            {/* GROUPS STAGE SECTION */}
+            {picksStage === "groups" && (
+            <div className="mb-6">
             <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
               📋 Groups Stage
             </h2>
@@ -258,9 +284,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               )}
             </div>
           </div>
-          )}
-        </>
-      )}
+            )}
+          </>
+        );
+      })()}
 
       {tab === "fairplay" && (
         <FairPlay fixtures={fixtures} picks={picks} />
