@@ -159,42 +159,16 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
         <WinnerPick pool={pool} userId={userId} fixtures={fixtures} />
       )}
 
-      {tab === "picks" && (() => {
-        // Tournament starts June 11, 2026
-        const TOURNAMENT_START = new Date("2026-06-11T00:00:00Z");
-        const isTournamentStarted = new Date() >= TOURNAMENT_START;
-        const daysUntilStart = Math.ceil((TOURNAMENT_START.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-
-        if (!isTournamentStarted) {
-          return (
-            <div className="card mb-4 border-l-4 bg-gradient-to-r from-[var(--card)] to-[var(--card-2)]" style={{ borderLeftColor: "var(--crimson)" }}>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-3xl">⏳</span>
-                <div>
-                  <h3 className="font-bold text-lg">Tournament Hasn't Started Yet</h3>
-                  <p className="text-sm text-[var(--muted)]">Picks are locked until June 11, 2026</p>
-                </div>
-              </div>
-              <p className="text-xs text-[var(--muted)] mt-3 leading-relaxed">
-                The World Cup begins on <strong>June 11</strong>. All match picks are reset to 0-0 and will be unlocked for editing starting on June 11. Check back then to make your predictions!
-              </p>
-              <p className="text-[10px] text-[var(--gold)] mt-3 font-semibold">
-                🎯 Tournament starts in {daysUntilStart} day{daysUntilStart === 1 ? "" : "s"}
-              </p>
-            </div>
-          );
-        }
-
-        return (
-          <>
-            <div className="card mb-4 border-l-4" style={{ borderLeftColor: "var(--crimson)" }}>
-              <h3 className="font-bold text-sm flex items-center gap-2">
-                🔒 Pool rule — picks lock 5 minutes before kickoff
-              </h3>
-              <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
-                Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. See your picks and live scores in the same place.
-              </p>
-            </div>
+      {tab === "picks" && (
+        <>
+          <div className="card mb-4 border-l-4" style={{ borderLeftColor: "var(--crimson)" }}>
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              🔒 Pool rule — picks lock 5 minutes before kickoff
+            </h3>
+            <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+              Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. See your picks and live scores in the same place.
+            </p>
+          </div>
 
             {/* STAGE TOGGLE */}
             <div className="card !p-2 flex gap-2 mb-4">
@@ -284,10 +258,9 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               )}
             </div>
           </div>
-            )}
-          </>
-        );
-      })()}
+          )}
+        </>
+      )}
 
       {tab === "fairplay" && (
         <FairPlay fixtures={fixtures} picks={picks} />
