@@ -39,8 +39,8 @@ export function PoolLayout({
   // Track previous scores to detect new goals
   const [prevScores, setPrevScores] = useState<Record<number, { h: number; a: number }>>({});
 
-  // Track previous leaderboard rank using ref (not state) to avoid causing re-subscriptions
-  const prevRankRef = useRef<number | null>(null);
+  // Track previous leaderboard positions for all members using ref
+  const prevLeaderboardRef = useRef<Record<string, { rank: number; points: number }>>({});
 
   // ====== REALTIME: Goal scoring notifications ======
   useEffect(() => {
@@ -101,23 +101,45 @@ export function PoolLayout({
       if (data) {
         setLeaderboard(data);
 
-        // Check if my rank changed
-        const myNewRank = data.findIndex((r) => r.user_id === userId) + 1;
-        const myNewPoints = data[myNewRank - 1]?.points || 0;
+        // Check all members for rank/points changes
+        data.forEach((member, index) => {
+          const currentRank = index + 1;
+          const prevMember = prevLeaderboardRef.current[member.user_id];
+          const prevRank = prevMember?.rank;
 
-        if (prevRankRef.current && myNewRank !== prevRankRef.current) {
-          const direction = myNewRank < prevRankRef.current ? "up" : "down";
-          const positionChange = Math.abs(myNewRank - prevRankRef.current);
-          const emoji = direction === "up" ? "🚀" : "📉";
+          // Notify if this is the first time we're seeing this rank (initialization)
+          if (!prevMember) {
+            prevLeaderboardRef.current[member.user_id] = { rank: currentRank, points: member.points };
+            return;
+          }
 
-          addNotification({
-            type: "leaderboard",
-            title: `${emoji} Leaderboard Update`,
-            message: `You moved ${direction} ${positionChange} position${positionChange > 1 ? "s" : ""} to #${myNewRank} with ${myNewPoints} points`,
-            duration: 7000,
-          });
-        }
-        prevRankRef.current = myNewRank;
+          // Check if rank changed
+          if (prevRank && currentRank !== prevRank) {
+            const direction = currentRank < prevRank ? "up" : "down";
+            const positionChange = Math.abs(currentRank - prevRank);
+            const emoji = direction === "up" ? "🚀" : "📉";
+
+            addNotification({
+              type: "leaderboard",
+              title: `${emoji} ${member.display_name} moved ${direction}!`,
+              message: `${member.display_name} has moved ${direction} to position #${currentRank} with ${member.points} points`,
+              duration: 6000,
+            });
+          }
+
+          // Notify if someone becomes #1
+          if (currentRank === 1 && prevRank !== 1) {
+            addNotification({
+              type: "leaderboard",
+              title: `👑 New Leader!`,
+              message: `${member.display_name} is the new leaderboard leader! 🏆`,
+              duration: 7000,
+            });
+          }
+
+          // Update tracked position
+          prevLeaderboardRef.current[member.user_id] = { rank: currentRank, points: member.points };
+        });
       }
     }
 
@@ -150,11 +172,14 @@ export function PoolLayout({
     };
   }, [pool.id, userId, addNotification]);
 
-  // Initialize previous rank ref
+  // Initialize previous leaderboard positions
   useEffect(() => {
-    const myRank = leaderboard.findIndex((r) => r.user_id === userId) + 1;
-    prevRankRef.current = myRank || null;
-  }, [leaderboard, userId]);
+    const newState: Record<string, { rank: number; points: number }> = {};
+    leaderboard.forEach((member, index) => {
+      newState[member.user_id] = { rank: index + 1, points: member.points };
+    });
+    prevLeaderboardRef.current = newState;
+  }, [leaderboard]);
 
   return (
     <div className="flex flex-col h-screen bg-[var(--bg)]">
