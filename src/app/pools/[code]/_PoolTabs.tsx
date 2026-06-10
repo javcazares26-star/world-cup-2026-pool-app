@@ -10,7 +10,6 @@ import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { WinnerPick } from "./_WinnerPick";
-import { ApiFootballTest } from "./_ApiFootballTest";
 import type { Message } from "@/lib/types";
 
 export type { Member, OwnedPoolRef } from "./_Admin";
@@ -132,9 +131,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   return (
     <>
       <Kpis stats={myStats} rank={myRank} live={liveCount} />
-
-      {/* Admin Testing: API-Football Connectivity */}
-      <ApiFootballTest isPoolOwner={isOwner} />
 
       <nav className="card !p-1.5 flex gap-1 my-4 overflow-x-auto">
         {([
