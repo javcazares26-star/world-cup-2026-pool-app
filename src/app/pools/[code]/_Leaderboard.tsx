@@ -13,8 +13,8 @@ export function Leaderboard({ rows, meId, pool }: { rows: LeaderboardRow[]; meId
             <th className="text-left p-3">#</th>
             <th className="text-left p-3">Player</th>
             <th className="text-left p-3">Points</th>
-            <th className="text-left p-3">Exact</th>
-            <th className="text-left p-3">Picks</th>
+            <th className="text-left p-3">Exact Score</th>
+            <th className="text-left p-3">Match Points</th>
           </tr>
         </thead>
         <tbody>
@@ -37,8 +37,8 @@ export function Leaderboard({ rows, meId, pool }: { rows: LeaderboardRow[]; meId
                   <span className={me ? "font-bold" : ""}>{r.display_name}{me && " 👤"}</span>
                 </td>
                 <td className="p-3 font-bold text-[var(--gold)]">{r.points}</td>
-                <td className="p-3">{r.exact_count}</td>
-                <td className="p-3 text-[var(--muted)]">{r.picks_made}</td>
+                <td className="p-3 text-[var(--pitch-light)]">{r.exact_score}x3</td>
+                <td className="p-3 text-[var(--muted)]">{r.match_points}x1</td>
               </tr>
             );
           })}
