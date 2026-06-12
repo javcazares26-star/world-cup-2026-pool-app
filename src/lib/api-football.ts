@@ -53,9 +53,9 @@ export function normalize(af: AFFixture): FixtureUpsert {
     if (isNaN(date.getTime())) {
       console.warn(`Invalid date from API: ${af.fixture.date}`);
     } else {
-      // API-Football appears to be 2 hours ahead for World Cup 2026
-      // Correct by subtracting 2 hours
-      const correctedDate = new Date(date.getTime() - (2 * 60 * 60 * 1000));
+      // API-Football appears to be 1 hour ahead for World Cup 2026
+      // Correct by subtracting 1 hour
+      const correctedDate = new Date(date.getTime() - (1 * 60 * 60 * 1000));
       kickoffUtc = correctedDate.toISOString();
       console.log(`Fixture ${af.fixture.id}: Original ${date.toISOString()} → Corrected ${kickoffUtc}`);
     }
