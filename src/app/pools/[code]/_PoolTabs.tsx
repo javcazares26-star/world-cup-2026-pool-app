@@ -10,6 +10,7 @@ import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { WinnerPick } from "./_WinnerPick";
+import { AdminPicks } from "./_AdminPicks";
 import type { Message } from "@/lib/types";
 
 export type { Member, OwnedPoolRef } from "./_Admin";
@@ -34,10 +35,28 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   const [picks, setPicks] = useState(initialPicks);
   const [leaderboard, setLeaderboard] = useState(initialLb);
   const [poolAdminHidden, setPoolAdminHidden] = useState(pool.admin_hidden);
+  const [allPicks, setAllPicks] = useState<any[]>([]);
 
   // Get current user's location for timezone display
   const myMember = initialMembers.find(m => m.user_id === userId);
   const myLocation = myMember?.location ?? null;
+
+  // ====== ADMIN: Fetch all pool picks for search ======
+  useEffect(() => {
+    if (!isOwner || tab !== "admin-picks") return;
+
+    const supabase = createClient();
+    (async () => {
+      const { data, error } = await supabase
+        .from("picks")
+        .select("*")
+        .eq("pool_id", pool.id);
+
+      if (!error && data) {
+        setAllPicks(data);
+      }
+    })();
+  }, [isOwner, tab, pool.id]);
 
   // ====== REALTIME: listen for pool updates (admin_hidden toggle) ======
   useEffect(() => {
@@ -139,7 +158,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           ["fairplay", "📊 Groups Live"],
           ["members", "👥 Members"],
           ["leaderboard", "🥇 Leaderboard"],
-          ...(isOwner ? [["admin", "⚙️ Admin"]] : []),
+          ...(isOwner ? [["admin-picks", "🔍 All Picks"], ["admin", "⚙️ Admin"]] : []),
         ] as [string, string][]).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}
             className={"px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-1 min-w-max " +
@@ -268,6 +287,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
 
       {tab === "leaderboard" && (
         <Leaderboard rows={leaderboard} meId={userId} pool={{ ...pool, admin_hidden: poolAdminHidden }} />
+      )}
+
+      {tab === "admin-picks" && isOwner && (
+        <AdminPicks fixtures={fixtures} picks={picks} members={initialMembers} allPicks={allPicks} />
       )}
 
       {tab === "admin" && isOwner && (
