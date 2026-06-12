@@ -46,15 +46,18 @@ export function normalize(af: AFFixture): FixtureUpsert {
   const isKnockout = groupLabel === null && af.league.round !== null;
 
   // Ensure kickoff_utc is always in proper ISO UTC format
-  // API-Football returns date in ISO format (should be UTC)
+  // API-Football returns date in ISO format but may have offset issues
   let kickoffUtc = af.fixture.date;
   try {
     const date = new Date(af.fixture.date);
     if (isNaN(date.getTime())) {
       console.warn(`Invalid date from API: ${af.fixture.date}`);
     } else {
-      // Ensure it's stored as ISO UTC string
-      kickoffUtc = date.toISOString();
+      // API-Football appears to be 2 hours ahead for World Cup 2026
+      // Correct by subtracting 2 hours
+      const correctedDate = new Date(date.getTime() - (2 * 60 * 60 * 1000));
+      kickoffUtc = correctedDate.toISOString();
+      console.log(`Fixture ${af.fixture.id}: Original ${date.toISOString()} → Corrected ${kickoffUtc}`);
     }
   } catch (e) {
     console.warn(`Failed to parse date: ${af.fixture.date}`, e);
