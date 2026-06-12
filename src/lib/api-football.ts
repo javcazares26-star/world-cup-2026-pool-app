@@ -45,13 +45,28 @@ export function normalize(af: AFFixture): FixtureUpsert {
   const groupLabel = deriveGroupLabel(af.league.round);
   const isKnockout = groupLabel === null && af.league.round !== null;
 
+  // Ensure kickoff_utc is always in proper ISO UTC format
+  // API-Football returns date in ISO format (should be UTC)
+  let kickoffUtc = af.fixture.date;
+  try {
+    const date = new Date(af.fixture.date);
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date from API: ${af.fixture.date}`);
+    } else {
+      // Ensure it's stored as ISO UTC string
+      kickoffUtc = date.toISOString();
+    }
+  } catch (e) {
+    console.warn(`Failed to parse date: ${af.fixture.date}`, e);
+  }
+
   return {
     id: af.fixture.id,
     league_id: af.league.id,
     season: af.league.season,
     round: af.league.round,
     group_label: groupLabel,
-    kickoff_utc: af.fixture.date,
+    kickoff_utc: kickoffUtc,
     status: af.fixture.status.long,
     status_short: status,
     minute: af.fixture.status.elapsed,
