@@ -158,8 +158,36 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
           </div>
         </div>
 
+        {/* Show actual score for finished matches */}
+        {isFinal && (fixture.home_score !== null || fixture.away_score !== null) && (
+          <div className="bg-[var(--bg-2)] rounded p-2 mt-2 border border-[var(--border)]">
+            <div className="text-[10px] text-[var(--muted)] mb-1 uppercase tracking-wider">
+              Final Score
+            </div>
+            <div className="flex justify-between items-center text-sm font-bold">
+              <span>{fixture.home_team}</span>
+              <span className="px-3 py-1 bg-[var(--card-2)] rounded">{fixture.home_score} - {fixture.away_score}</span>
+              <span>{fixture.away_team}</span>
+            </div>
+            {/* Show points earned */}
+            <div className="mt-2 text-xs text-center">
+              {pick && (
+                (() => {
+                  if (pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score) {
+                    return <span className="text-[var(--pitch-light)] font-bold">✅ Exact Match! +3 points</span>;
+                  }
+                  if (Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0))) {
+                    return <span className="text-[var(--gold)] font-bold">⭐ Correct Outcome! +1 point</span>;
+                  }
+                  return <span className="text-[var(--crimson)]">❌ No points</span>;
+                })()
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Real-time score display side-by-side with picks */}
-        {showScore && (fixture.home_score !== null || fixture.away_score !== null) && (
+        {showScore && !isFinal && (fixture.home_score !== null || fixture.away_score !== null) && (
           <div className="flex justify-between items-center px-1 text-xs">
             <div className="text-[var(--muted)]">
               Your pick: <span className="font-bold text-white">{home} vs {away}</span>
