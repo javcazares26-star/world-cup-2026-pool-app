@@ -13,7 +13,16 @@ type Props = {
   onSave: (fixtureId: number, home: number, away: number) => void;
 };
 
-const LOCK_LEAD_MS = 5 * 60 * 1000; // picks lock 5 minutes before kickoff
+const DEFAULT_LOCK_LEAD_MS = 2 * 60 * 60 * 1000; // picks lock 2 hours before kickoff
+const CANADA_BOSNIA_LOCK_MS = 30 * 60 * 1000; // Canada vs Bosnia: lock 30 mins before
+
+function getLockLeadMs(fixture: Fixture): number {
+  // Special case: Canada vs Bosnia locks only 30 mins before
+  const isCanadaBosnia =
+    (fixture.home_team === 'Canada' && fixture.away_team?.includes('Bosnia')) ||
+    (fixture.away_team === 'Canada' && fixture.home_team?.includes('Bosnia'));
+  return isCanadaBosnia ? CANADA_BOSNIA_LOCK_MS : DEFAULT_LOCK_LEAD_MS;
+}
 
 export function MatchRow({ fixture, pick, showActual, showScore, userLocation, onSave }: Props) {
   const [home, setHome] = useState(pick?.home_pick ?? 0);
@@ -27,10 +36,12 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
     if (pick) { setHome(pick.home_pick); setAway(pick.away_pick); }
   }, [pick]);
 
+  const lockLeadMs = getLockLeadMs(fixture);
+
   useEffect(() => {
     const ko = new Date(fixture.kickoff_utc);
     const koMs = ko.getTime();
-    const lockTime = koMs - LOCK_LEAD_MS;
+    const lockTime = koMs - lockLeadMs;
     const msUntilLock = lockTime - Date.now();
 
     // Update frequently when close to lock time, less frequently otherwise
@@ -38,7 +49,7 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
 
     const id = setInterval(() => setNow(Date.now()), interval);
     return () => clearInterval(id);
-  }, [fixture.kickoff_utc]);
+  }, [fixture.kickoff_utc, lockLeadMs]);
 
   // Parse kickoff time accurately
   const ko = new Date(fixture.kickoff_utc);
@@ -47,7 +58,7 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
   }
 
   const koMs = ko.getTime();
-  const lockTimeMs = koMs - LOCK_LEAD_MS; // Time when picks should lock
+  const lockTimeMs = koMs - lockLeadMs; // Time when picks should lock
   const msUntilLock = lockTimeMs - now;
 
   const isLive = ["1H","2H","ET","LIVE","HT","BT","P"].includes(fixture.status_short ?? "");
