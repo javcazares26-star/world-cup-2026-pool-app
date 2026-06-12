@@ -1,3 +1,12 @@
 {
-  "crons": []
+  "crons": [
+    {
+      "path": "/api/cron/sync-fixtures",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/award-tournament-winner",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }
