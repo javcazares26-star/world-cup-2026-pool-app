@@ -19,7 +19,8 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
   const [home, setHome] = useState(pick?.home_pick ?? 0);
   const [away, setAway] = useState(pick?.away_pick ?? 0);
   const [saved, setSaved] = useState(false);
-  // Tick re-renders the row every 15s so the countdown stays fresh
+  // Tick re-renders the row frequently to keep countdown accurate
+  // Updates every 1 second when within 10 minutes of lock, every 15s otherwise
   const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
@@ -27,16 +28,31 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
   }, [pick]);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 15000);
-    return () => clearInterval(id);
-  }, []);
+    const ko = new Date(fixture.kickoff_utc);
+    const koMs = ko.getTime();
+    const lockTime = koMs - LOCK_LEAD_MS;
+    const msUntilLock = lockTime - Date.now();
 
+    // Update frequently when close to lock time, less frequently otherwise
+    const interval = msUntilLock < 10 * 60 * 1000 ? 1000 : 15000;
+
+    const id = setInterval(() => setNow(Date.now()), interval);
+    return () => clearInterval(id);
+  }, [fixture.kickoff_utc]);
+
+  // Parse kickoff time accurately
   const ko = new Date(fixture.kickoff_utc);
+  if (isNaN(ko.getTime())) {
+    console.warn(`Invalid kickoff time for fixture ${fixture.id}: ${fixture.kickoff_utc}`);
+  }
+
   const koMs = ko.getTime();
-  const msUntilLock = koMs - LOCK_LEAD_MS - now;
+  const lockTimeMs = koMs - LOCK_LEAD_MS; // Time when picks should lock
+  const msUntilLock = lockTimeMs - now;
+
   const isLive = ["1H","2H","ET","LIVE","HT","BT","P"].includes(fixture.status_short ?? "");
   const isFinal = ["FT","AET","PEN"].includes(fixture.status_short ?? "");
-  const isLockedByTime = msUntilLock <= 0;
+  const isLockedByTime = msUntilLock <= 0 && !isLive && !isFinal; // Don't lock if already live/final
   const locked = pick?.locked || (fixture.status_short && fixture.status_short !== "NS") || isLockedByTime;
 
   // Show a countdown only when within 30 minutes of the lock cutoff
