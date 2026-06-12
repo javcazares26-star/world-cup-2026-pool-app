@@ -172,25 +172,25 @@ export function Chat({ poolId, userId, initial }: Props) {
                 : <div className="w-8 h-8 rounded-full bg-[var(--card-2)] mt-1 flex-shrink-0 flex items-center justify-center text-xs font-bold">
                     {group.author.slice(0, 1).toUpperCase()}
                   </div>}
-              <div className={"flex flex-col gap-1 max-w-[80%] " + (isMe ? "items-end" : "items-start")}>
-                <div className={"text-[10px] text-[var(--muted)] " + (isMe ? "text-right" : "")}>
+              <div className={"flex flex-col gap-2 max-w-[80%] " + (isMe ? "items-end" : "items-start")}>
+                <div className={"text-xs text-[var(--muted)] font-semibold " + (isMe ? "text-right" : "")}>
                   {isMe ? "You" : group.author}
                 </div>
                 {group.items.map(m => (
-                  <div key={m.id} className="flex items-end gap-1 group/msg max-w-full">
+                  <div key={m.id} className="flex items-end gap-2 group/msg max-w-full">
                     {isMe && (
                       <button
                         onClick={() => remove(m.id)}
-                        className="opacity-0 group-hover/msg:opacity-100 text-[10px] text-[var(--crimson)] transition px-1"
+                        className="opacity-0 group-hover/msg:opacity-100 text-xs text-[var(--crimson)] transition px-1"
                         title="Delete">×</button>
                     )}
-                    <div className={"px-3 py-2 rounded-2xl text-sm break-words " +
+                    <div className={"px-4 py-3 rounded-2xl break-words font-medium " +
                       (isMe
-                        ? "bg-gradient-to-br from-[var(--crimson)] to-[var(--gold)] text-[#1a1a1a] rounded-br-sm"
-                        : "bg-[var(--card-2)] text-white rounded-bl-sm")}>
+                        ? "bg-gradient-to-br from-[var(--crimson)] to-[var(--gold)] text-[#1a1a1a] rounded-br-sm text-base"
+                        : "bg-[var(--card-2)] text-white rounded-bl-sm text-base")}>
                       {m.content}
                     </div>
-                    <span className="text-[10px] text-[var(--muted)] whitespace-nowrap">
+                    <span className="text-xs text-[var(--muted)] whitespace-nowrap">
                       {formatTime(m.created_at)}
                     </span>
                   </div>

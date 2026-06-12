@@ -5,6 +5,14 @@ export function Leaderboard({ rows, meId, pool }: { rows: LeaderboardRow[]; meId
   // Filter out hidden admin from leaderboard
   const visibleRows = rows.filter(r => !(r.user_id === pool.owner_id && pool.admin_hidden));
 
+  // Calculate proper ranks accounting for ties
+  const getProperRank = (index: number): number => {
+    const currentPoints = visibleRows[index].points;
+    // Count how many people have MORE points
+    const betterCount = visibleRows.filter(r => r.points > currentPoints).length;
+    return betterCount + 1;
+  };
+
   return (
     <div className="card !p-0 overflow-hidden">
       <table className="w-full">
@@ -23,14 +31,15 @@ export function Leaderboard({ rows, meId, pool }: { rows: LeaderboardRow[]; meId
           )}
           {visibleRows.map((r, i) => {
             const me = r.user_id === meId;
-            const rankClass = i === 0 ? "rank-gold"
-              : i === 1 ? "rank-silver"
-              : i === 2 ? "rank-bronze"
+            const rank = getProperRank(i);
+            const rankClass = rank === 1 ? "rank-gold"
+              : rank === 2 ? "rank-silver"
+              : rank === 3 ? "rank-bronze"
               : "bg-[var(--card-2)]";
             return (
               <tr key={r.user_id} className={"border-t border-[var(--border)] " + (me ? "bg-[rgba(244,196,48,0.08)]" : "")}>
                 <td className="p-3">
-                  <span className={"inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold " + rankClass}>{i + 1}</span>
+                  <span className={"inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold " + rankClass}>{rank}</span>
                 </td>
                 <td className="p-3 flex items-center gap-2">
                   {r.avatar_url && <img src={r.avatar_url} alt="" className="w-7 h-7 rounded-full" />}
