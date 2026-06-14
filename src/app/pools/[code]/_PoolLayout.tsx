@@ -42,6 +42,9 @@ export function PoolLayout({
   // Track previous leaderboard positions for all members using ref
   const prevLeaderboardRef = useRef<Record<string, { rank: number; points: number }>>({});
 
+  // Track which fixtures we've already notified about picks locking
+  const lockedNotificationsRef = useRef<Set<number>>(new Set());
+
   // ====== REALTIME: Goal scoring notifications ======
   useEffect(() => {
     const supabase = createClient();
@@ -180,6 +183,41 @@ export function PoolLayout({
     });
     prevLeaderboardRef.current = newState;
   }, [leaderboard]);
+
+  // ====== REALTIME: Picks lock notifications ======
+  useEffect(() => {
+    const supabase = createClient();
+
+    const picksCh = supabase
+      .channel(`picks-lock-${pool.id}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "picks", filter: `pool_id=eq.${pool.id}` }, async (payload) => {
+        const newPick = payload.new as Pick;
+        const oldPick = payload.old as Pick;
+
+        // Only notify if locked changed from false to true
+        if (!oldPick.locked && newPick.locked) {
+          // Get the fixture details for this pick
+          const fixture = fixtures.find(f => f.id === newPick.fixture_id);
+
+          if (fixture && !lockedNotificationsRef.current.has(fixture.id)) {
+            // Mark as notified to avoid duplicate notifications
+            lockedNotificationsRef.current.add(fixture.id);
+
+            addNotification({
+              type: "lock",
+              title: `🔒 Picks Locked!`,
+              message: `Picks are now locked for ${fixture.home_team} vs ${fixture.away_team}`,
+              duration: 6000,
+            });
+          }
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(picksCh);
+    };
+  }, [pool.id, fixtures, addNotification]);
 
   return (
     <div className="flex flex-col h-screen bg-[var(--bg)]">

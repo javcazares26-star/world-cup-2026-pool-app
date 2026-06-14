@@ -5,6 +5,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/create-default-picks",
+      "schedule": "*/10 * * * *"
+    },
+    {
       "path": "/api/cron/award-tournament-winner",
       "schedule": "0 0 * * *"
     }

@@ -131,33 +131,70 @@ export function AdminPicks({ fixtures, picks: userPicks, members, allPicks }: Pr
                   <p className="text-xs text-[var(--muted)]">No picks made yet</p>
                 ) : (
                   <div className="space-y-2">
-                    {picksWithFixtures.map(({ pick, fixture }) => (
-                      <div
-                        key={pick.id}
-                        className="bg-[var(--bg-2)] rounded p-2 text-xs flex items-center justify-between"
-                      >
-                        <div className="flex-1">
-                          <span className="text-[var(--muted)]">
-                            {fixture.group_label || fixture.round}
-                          </span>
-                          <div className="font-medium text-sm mt-1">
-                            {fixture.home_team}
-                            <span className="mx-2 font-bold">
-                              {pick.home_pick} - {pick.away_pick}
+                    {picksWithFixtures.map(({ pick, fixture }) => {
+                      const isFinished = ["FT", "AET", "PEN"].includes(fixture.status_short ?? "");
+                      const isExact = isFinished && pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score;
+                      const isOutcomeCorrect = isFinished &&
+                        Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0));
+
+                      return (
+                        <div
+                          key={pick.id}
+                          className={`rounded p-3 text-xs space-y-2 border ${
+                            isExact
+                              ? "bg-[rgba(6,214,160,0.1)] border-[var(--pitch-light)]"
+                              : isOutcomeCorrect
+                              ? "bg-[rgba(244,196,48,0.1)] border-[var(--gold)]"
+                              : "bg-[var(--bg-2)] border-[var(--border)]"
+                          }`}
+                        >
+                          <div>
+                            <span className="text-[var(--muted)]">
+                              {fixture.group_label || fixture.round}
                             </span>
-                            {fixture.away_team}
+                          </div>
+
+                          <div className="space-y-2">
+                            {/* Participant's Pick */}
+                            <div className="font-medium text-sm">
+                              <span className="text-[var(--muted)]">Pick:</span>
+                              <div className="mt-1 flex items-center gap-2">
+                                <span>{fixture.home_team}</span>
+                                <span className="font-bold bg-[var(--card-2)] px-2 py-1 rounded min-w-[50px] text-center">
+                                  {pick.home_pick} - {pick.away_pick}
+                                </span>
+                                <span>{fixture.away_team}</span>
+                              </div>
+                            </div>
+
+                            {/* Actual Score */}
+                            {fixture.home_score !== null && fixture.away_score !== null && (
+                              <div className="font-medium text-sm border-t border-[var(--border)] pt-2">
+                                <span className="text-[var(--muted)]">
+                                  {isFinished ? "Final:" : "Score:"}
+                                </span>
+                                <div className="mt-1 flex items-center gap-2">
+                                  <span>{fixture.home_team}</span>
+                                  <span className={`font-bold px-2 py-1 rounded min-w-[50px] text-center ${
+                                    isExact ? "bg-[var(--pitch-light)] text-[#0a1a14]" : "bg-[var(--card-2)]"
+                                  }`}>
+                                    {fixture.home_score} - {fixture.away_score}
+                                  </span>
+                                  <span>{fixture.away_team}</span>
+                                </div>
+                                {isFinished && (
+                                  <div className="text-[10px] text-[var(--muted)] mt-1">
+                                    {isExact && "✅ Exact match! +3 points"}
+                                    {isOutcomeCorrect && !isExact && "⭐ Correct outcome! +1 point"}
+                                    {!isExact && !isOutcomeCorrect && "No points"}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        {fixture.home_score !== null && fixture.away_score !== null && (
-                          <div className="text-right ml-2">
-                            <div className="text-[10px] text-[var(--muted)]">Actual:</div>
-                            <div className="font-bold text-[var(--pitch-light)]">
-                              {fixture.home_score} - {fixture.away_score}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
