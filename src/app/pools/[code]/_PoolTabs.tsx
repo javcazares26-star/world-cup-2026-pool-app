@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Fixture, Pick, Pool, LeaderboardRow } from "@/lib/types";
 import { MatchRow } from "./_MatchRow";
+import { UpcomingMatches } from "./_UpcomingMatches";
 import { Leaderboard } from "./_Leaderboard";
 import { Kpis } from "./_Kpis";
 import { FairPlay } from "./_FairPlay";
@@ -184,6 +185,9 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. See your picks and live scores in the same place.
             </p>
           </div>
+
+            {/* UPCOMING MATCHES (grouped by day) — shown at top */}
+            <UpcomingMatches fixtures={fixtures} picks={picks} onSave={upsertPick} userLocation={myLocation} />
 
             {/* STAGE TOGGLE */}
             <div className="card !p-2 flex gap-2 mb-4">
