@@ -41,9 +41,10 @@ export async function GET(req: Request) {
     } else if (mode === "live") {
       upserted = await fetchLiveFixtures();
     } else {
-      // Auto: live every run, full pull every 30 min (≈ every 6th run at 5-min cadence)
-      const now = Math.floor(Date.now() / 60000);
-      upserted = (now % 30 === 0) ? await fetchAllFixtures() : await fetchLiveFixtures();
+      // Auto: live every run, full pull every 15 min for better match coverage
+      // Use a simple interval-based approach: every 3rd run (5 min × 3 = 15 min)
+      const runCounter = Math.floor(Date.now() / (5 * 60 * 1000)) % 3;
+      upserted = (runCounter === 0) ? await fetchAllFixtures() : await fetchLiveFixtures();
       // If first ever run, the table is empty — force full pull.
       const { count } = await supabase.from("fixtures").select("id", { count: "exact", head: true });
       if (!count) upserted = await fetchAllFixtures();
