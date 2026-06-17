@@ -2,7 +2,6 @@
 import { useEffect, useState, useRef } from "react";
 import type { Fixture, Pick, Pool, LeaderboardRow, Message } from "@/lib/types";
 import { PoolTabs, type Member, type OwnedPoolRef } from "./_PoolTabs";
-import { Chat } from "./_Chat";
 import { useNotification } from "@/components/NotificationContext";
 import { createClient } from "@/lib/supabase/client";
 
@@ -31,7 +30,6 @@ export function PoolLayout({
   initialTab,
   header,
 }: Props) {
-  const [isChatOpen, setIsChatOpen] = useState(true);
   const [leaderboard, setLeaderboard] = useState(initialLeaderboard);
   const [fixtures, setFixtures] = useState(initialFixtures);
   const { addNotification } = useNotification();
@@ -224,63 +222,19 @@ export function PoolLayout({
       {/* Header */}
       {header && <div className="flex-shrink-0">{header}</div>}
 
-      {/* Main content + Chat */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Main content area */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 max-w-5xl mx-auto w-full">
-          <PoolTabs
-            pool={pool}
-            userId={userId}
-            fixtures={fixtures}
-            myPicks={myPicks}
-            leaderboard={leaderboard}
-            messages={initialMessages}
-            members={members}
-            ownedPools={ownedPools}
-            initialTab={initialTab}
-          />
-        </div>
-
-        {/* Chat sidebar */}
-        <div
-          className={`
-            fixed md:relative bottom-0 right-0 top-auto md:top-0 z-40
-            transform transition-transform duration-300
-            ${isChatOpen ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-x-0"}
-            w-full md:w-80 h-96 md:h-auto border-t md:border-t-0 md:border-l border-[var(--border)]
-            bg-[var(--bg)] flex flex-col shadow-lg md:shadow-none
-          `}
-        >
-        {/* Chat header */}
-        <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
-          <h3 className="font-bold text-sm flex items-center gap-2">
-            💬 Pool Chat
-          </h3>
-          <button
-            onClick={() => setIsChatOpen(false)}
-            className="md:hidden text-[var(--muted)] hover:text-[var(--text)]"
-            aria-label="Close chat"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* Chat content */}
-        <div className="flex-1 overflow-hidden">
-          <Chat poolId={pool.id} userId={userId} initial={initialMessages} />
-        </div>
-      </div>
-
-        {/* Mobile chat toggle button (only show when chat is closed on mobile) */}
-        {!isChatOpen && (
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-gradient-to-r from-[var(--crimson)] to-[var(--gold)] text-white shadow-xl flex items-center justify-center font-bold text-xl hover:shadow-2xl transition-all hover:scale-110"
-            aria-label="Open chat"
-          >
-            💬
-          </button>
-        )}
+      {/* Main content area */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 max-w-5xl mx-auto w-full">
+        <PoolTabs
+          pool={pool}
+          userId={userId}
+          fixtures={fixtures}
+          myPicks={myPicks}
+          leaderboard={leaderboard}
+          messages={initialMessages}
+          members={members}
+          ownedPools={ownedPools}
+          initialTab={initialTab}
+        />
       </div>
     </div>
   );
