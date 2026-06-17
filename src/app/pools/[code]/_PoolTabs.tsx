@@ -37,6 +37,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   const [leaderboard, setLeaderboard] = useState(initialLb);
   const [poolAdminHidden, setPoolAdminHidden] = useState(pool.admin_hidden);
   const [allPicks, setAllPicks] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Get current user's location for timezone display
   const myMember = initialMembers.find(m => m.user_id === userId);
@@ -88,6 +89,21 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
     return () => { supabase.removeChannel(ch); };
   }, []);
 
+  // ====== REALTIME: listen for picks updates (new default picks from backfill) ======
+  useEffect(() => {
+    const supabase = createClient();
+    const ch = supabase
+      .channel(`picks-changes-${pool.id}-${userId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "picks", filter: `pool_id=eq.${pool.id},user_id=eq.${userId}` }, (payload) => {
+        setPicks(prev => [...prev, payload.new as Pick]);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "picks", filter: `pool_id=eq.${pool.id},user_id=eq.${userId}` }, (payload) => {
+        setPicks(prev => prev.map(p => p.id === (payload.new as any).id ? (payload.new as Pick) : p));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [pool.id, userId]);
+
   // NOTE: Real-time leaderboard updates are now handled in _PoolLayout.tsx
   // to avoid duplicate subscriptions to the same channel
 
@@ -95,7 +111,18 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   const groupStageFixtures = useMemo(() => fixtures.filter(f => f.group_label), [fixtures]);
   const eliminationFixtures = useMemo(() => fixtures.filter(f => !f.group_label), [fixtures]);
 
+  // ====== Get unique dates from group stage fixtures ======
+  const uniqueDatesInGroups = useMemo(() => {
+    const dates = new Set<string>();
+    groupStageFixtures.forEach(f => {
+      const date = new Date(f.kickoff_utc).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      dates.add(date);
+    });
+    return Array.from(dates).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  }, [groupStageFixtures]);
+
   // Group fixtures by label (Groups) or round (Elimination)
+  // Sort within each group: today's/upcoming first, then finished matches
   const groupedByStage = useMemo(() => {
     const groups: Record<string, Fixture[]> = {};
     const elim: Record<string, Fixture[]> = {};
@@ -108,6 +135,20 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
     eliminationFixtures.forEach(f => {
       const key = f.round || "Knockout";
       (elim[key] ??= []).push(f);
+    });
+
+    // Sort fixtures within each group: upcoming/today first, then by date
+    Object.keys(groups).forEach(groupKey => {
+      groups[groupKey].sort((a, b) => {
+        // Priority 1: Upcoming matches (NS) should come before finished matches
+        const aIsUpcoming = a.status_short === "NS";
+        const bIsUpcoming = b.status_short === "NS";
+        if (aIsUpcoming && !bIsUpcoming) return -1;
+        if (!aIsUpcoming && bIsUpcoming) return 1;
+
+        // Priority 2: Sort by kickoff time
+        return new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime();
+      });
     });
 
     return { groups, elim };
@@ -214,23 +255,54 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             {/* GROUPS STAGE SECTION */}
             {picksStage === "groups" && (
             <div className="mb-6">
-            <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
-              📋 Groups Stage
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-[var(--gold)] flex items-center gap-2">
+                📋 Groups Stage
+              </h2>
+              {uniqueDatesInGroups.length > 0 && (
+                <select
+                  value={selectedDate || ""}
+                  onChange={(e) => setSelectedDate(e.target.value || null)}
+                  className="px-3 py-2 rounded-lg bg-[var(--card-2)] text-sm font-semibold text-[var(--text)] border border-[var(--border)] cursor-pointer hover:border-[var(--gold)] transition-colors"
+                >
+                  <option value="">All Dates</option>
+                  {uniqueDatesInGroups.map(date => (
+                    <option key={date} value={date}>{date}</option>
+                  ))}
+                </select>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.entries(groupedByStage.groups).map(([group, ms]) => (
-              <div key={group} className="card !p-0 overflow-hidden">
-                <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
-                  {group}
-                </div>
-                {ms.map(m => (
-                  <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} />
-                ))}
-              </div>
-            ))}
+              {Object.entries(groupedByStage.groups).map(([group, ms]) => {
+                // Filter matches by selected date if one is chosen
+                const filteredMatches = selectedDate
+                  ? ms.filter(m => new Date(m.kickoff_utc).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) === selectedDate)
+                  : ms;
+
+                // Only show group if it has matches for the selected date
+                if (filteredMatches.length === 0 && selectedDate) return null;
+
+                return (
+                  <div key={group} className="card !p-0 overflow-hidden">
+                    <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
+                      {group}
+                    </div>
+                    {filteredMatches.map(m => (
+                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} />
+                    ))}
+                  </div>
+                );
+              })}
               {groupStageFixtures.length === 0 && (
                 <div className="card col-span-2 text-center">
                   <p className="text-[var(--muted)]">Group stage fixtures haven't synced yet. The cron will populate them within 5 minutes after deploy.</p>
+                </div>
+              )}
+              {selectedDate && Object.values(groupedByStage.groups).every(ms =>
+                ms.filter(m => new Date(m.kickoff_utc).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) === selectedDate).length === 0
+              ) && (
+                <div className="card col-span-2 text-center">
+                  <p className="text-[var(--muted)]">No matches scheduled for {selectedDate}</p>
                 </div>
               )}
             </div>
@@ -298,7 +370,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       )}
 
       {tab === "admin" && isOwner && (
-        <Admin pool={pool} userId={userId} members={initialMembers} ownedPools={ownedPools} />
+        <Admin pool={pool} userId={userId} members={initialMembers} ownedPools={ownedPools} fixtures={fixtures} />
       )}
     </>
   );

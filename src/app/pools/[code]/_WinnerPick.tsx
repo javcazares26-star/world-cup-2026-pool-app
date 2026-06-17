@@ -42,24 +42,20 @@ export function WinnerPick({ pool, userId, fixtures }: Props) {
     return filteredTeams.sort();
   }, [fixtures]);
 
-  // Calculate lock deadlines
-  const lockDeadlines = useMemo(() => {
-    // First deadline: 5 mins before first match (June 11, 2026 @ 1 PM Mexico City = 17:55 UTC June 10 or 18:00 UTC June 11)
-    // Using June 11, 2026 17:55 UTC as the first lock time
-    const firstMatchLock = new Date("2026-06-11T17:55:00Z");
+  // Calculate lock deadline: 5 mins before first knockout match (group stage ends)
+  const groupStageLockDeadline = useMemo(() => {
+    // Find first knockout match to determine when group stage ends
+    const knockoutFixtures = fixtures
+      .filter(f => f.is_knockout)
+      .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
 
-    // Final lock: 5 mins before first knockout match
-    const knockoutFixtures = fixtures.filter(f => !f.group_label);
-    const firstKnockout = knockoutFixtures.length > 0
-      ? new Date(knockoutFixtures[0].kickoff_utc)
-      : new Date("2026-06-27T13:00:00Z"); // Fallback
+    if (knockoutFixtures.length > 0) {
+      const firstKnockout = new Date(knockoutFixtures[0].kickoff_utc);
+      return new Date(firstKnockout.getTime() - 5 * 60000); // 5 mins before
+    }
 
-    const knockoutLock = new Date(firstKnockout.getTime() - 5 * 60000); // 5 mins before
-
-    return {
-      firstMatch: firstMatchLock,
-      groupStageLock: knockoutLock,
-    };
+    // Fallback: June 27, 2026 (first Round of 16 matches)
+    return new Date("2026-06-27T13:00:00Z");
   }, [fixtures]);
 
   // Load my pick from database
@@ -85,11 +81,11 @@ export function WinnerPick({ pool, userId, fixtures }: Props) {
     loadPick();
   }, [pool.id, userId]);
 
-  // Countdown timer to first lock
+  // Countdown timer until lock (group stage ends)
   useEffect(() => {
     const updateCountdown = () => {
       const now = new Date();
-      const timeLeft = lockDeadlines.firstMatch.getTime() - now.getTime();
+      const timeLeft = groupStageLockDeadline.getTime() - now.getTime();
 
       if (timeLeft <= 0) {
         setTimeUntilLock(0);
@@ -101,13 +97,13 @@ export function WinnerPick({ pool, userId, fixtures }: Props) {
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
-  }, [lockDeadlines.firstMatch]);
+  }, [groupStageLockDeadline]);
 
   // Auto-lock when group stage ends
   useEffect(() => {
     const checkLockStatus = () => {
       const now = new Date();
-      if (now >= lockDeadlines.groupStageLock && myPick && !myPick.locked_at) {
+      if (now >= groupStageLockDeadline && myPick && !myPick.locked_at) {
         setIsLocked(true);
         // Auto-lock in database
         const supabase = createClient();
@@ -125,7 +121,7 @@ export function WinnerPick({ pool, userId, fixtures }: Props) {
     checkLockStatus();
     const interval = setInterval(checkLockStatus, 60000); // Check every minute
     return () => clearInterval(interval);
-  }, [lockDeadlines.groupStageLock, myPick, pool.id, userId]);
+  }, [groupStageLockDeadline, myPick, pool.id, userId]);
 
   const handleTeamSelect = async (teamName: string) => {
     // Don't allow changes if locked
@@ -173,8 +169,8 @@ export function WinnerPick({ pool, userId, fixtures }: Props) {
         </h3>
         <div className="flex items-center gap-3">
           {!isLocked && timeUntilLock !== null && (
-            <div className="text-xs font-semibold text-[var(--gold)] bg-[var(--card-2)] px-3 py-1 rounded-full">
-              {formatCountdown(timeUntilLock)}
+            <div className="text-xs font-semibold text-[var(--gold)] bg-[var(--card-2)] px-3 py-1 rounded-full" title="Time until group stage ends and pick locks">
+              ⏰ {formatCountdown(timeUntilLock)}
             </div>
           )}
           {isLocked && (

@@ -2,7 +2,8 @@
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { Pool } from "@/lib/types";
+import type { Pool, Fixture } from "@/lib/types";
+import { FixtureScoreManager } from "./_FixtureScoreManager";
 
 export type Member = {
   user_id: string;
@@ -21,11 +22,12 @@ export type OwnedPoolRef = {
   created_at: string;
 };
 
-export function Admin({ pool, userId, members: initialMembers, ownedPools: initialOwnedPools }: {
+export function Admin({ pool, userId, members: initialMembers, ownedPools: initialOwnedPools, fixtures: initialFixtures }: {
   pool: Pool;
   userId: string;
   members: Member[];
   ownedPools: OwnedPoolRef[];
+  fixtures?: Fixture[];
 }) {
   const isOwner = pool.owner_id === userId;
   const router = useRouter();
@@ -302,6 +304,11 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
           </tbody>
         </table>
       </div>
+
+      {/* === Fixture Score Manager === */}
+      {initialFixtures && initialFixtures.length > 0 && (
+        <FixtureScoreManager fixtures={initialFixtures} />
+      )}
 
       {/* === Danger zone — delete any pool you own === */}
       <div className="card" style={{ borderColor: "var(--crimson)" }}>

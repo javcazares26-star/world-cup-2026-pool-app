@@ -184,10 +184,10 @@ export function Chat({ poolId, userId, initial }: Props) {
                         className="opacity-0 group-hover/msg:opacity-100 text-xs text-[var(--crimson)] transition px-1"
                         title="Delete">×</button>
                     )}
-                    <div className={"px-4 py-3 rounded-2xl break-words font-semibold " +
+                    <div className={"px-4 py-3 rounded-2xl break-words font-bold text-white " +
                       (isMe
                         ? "bg-gradient-to-br from-[var(--crimson)] to-[var(--gold)] text-[#1a1a1a] rounded-br-sm text-base"
-                        : "bg-[var(--card-2)] text-white rounded-bl-sm text-base shadow-md")}>
+                        : "bg-[var(--card-2)] rounded-bl-sm text-base shadow-lg [text-shadow:_0_1px_3px_rgba(0,0,0,0.5)]")}>
                       {m.content}
                     </div>
                     <span className="text-xs text-[var(--muted)] whitespace-nowrap">

@@ -41,13 +41,29 @@ export async function GET(req: Request) {
     } else if (mode === "live") {
       upserted = await fetchLiveFixtures();
     } else {
-      // Auto: live every run, full pull every 15 min for better match coverage
-      // Use a simple interval-based approach: every 3rd run (5 min × 3 = 15 min)
-      const runCounter = Math.floor(Date.now() / (5 * 60 * 1000)) % 3;
-      upserted = (runCounter === 0) ? await fetchAllFixtures() : await fetchLiveFixtures();
-      // If first ever run, the table is empty — force full pull.
-      const { count } = await supabase.from("fixtures").select("id", { count: "exact", head: true });
-      if (!count) upserted = await fetchAllFixtures();
+      // Auto: Do a FULL fetch every time to ensure we have all fixtures with updated scores
+      // The API caching (60s) on the full fetch is fast enough and ensures completeness
+      upserted = await fetchAllFixtures();
+
+      // Also fetch live fixtures for in-play score updates (runs quickly)
+      const liveFixtures = await fetchLiveFixtures();
+      if (liveFixtures.length > 0) {
+        // Merge live fixtures in case there are in-play updates not yet in full fetch
+        const liveIds = new Set(liveFixtures.map(f => f.id));
+        upserted = upserted.filter(f => !liveIds.has(f.id)).concat(liveFixtures);
+      }
+    }
+
+    // Log sample of fixtures with scores for debugging
+    const fixturesWithScores = upserted.filter(f => f.home_score !== null && f.away_score !== null);
+    console.log(`[Sync Fixtures] Total fetched: ${upserted.length}, With scores: ${fixturesWithScores.length}`);
+    if (fixturesWithScores.length > 0) {
+      console.log(`[Sync Fixtures] Sample with scores:`, fixturesWithScores.slice(0, 3).map(f => ({
+        id: f.id,
+        teams: `${f.home_team} vs ${f.away_team}`,
+        score: `${f.home_score}-${f.away_score}`,
+        status: f.status_short,
+      })));
     }
 
     if (upserted.length) {
