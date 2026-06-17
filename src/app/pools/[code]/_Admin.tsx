@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Pool, Fixture } from "@/lib/types";
-import { FixtureScoreManager } from "./_FixtureScoreManager";
 
 export type Member = {
   user_id: string;
@@ -21,6 +20,68 @@ export type OwnedPoolRef = {
   name: string;
   created_at: string;
 };
+
+function FixtureScoreManagerInline({ fixtures }: { fixtures: Fixture[] }) {
+  const [editId, setEditId] = useState<number | null>(null);
+  const [h, setH] = useState("");
+  const [a, setA] = useState("");
+
+  const needScores = fixtures.filter(f =>
+    (f.status_short === "FT" || f.status_short === "AET" || f.status_short === "PEN") &&
+    (f.home_score === null || f.away_score === null)
+  );
+  const hasScores = fixtures.filter(f => f.home_score !== null).length;
+
+  const save = async (id: number) => {
+    const supabase = createClient();
+    await supabase.from("fixtures").update({ home_score: parseInt(h), away_score: parseInt(a) }).eq("id", id);
+    setEditId(null);
+    setH("");
+    setA("");
+  };
+
+  return (
+    <div className="card">
+      <h2 className="font-bold mb-3">📊 Fixture Scores</h2>
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="bg-[var(--card-2)] p-2 rounded text-center text-sm">
+          <div className="text-xs text-[var(--muted)]">Total</div>
+          <div className="font-bold">{fixtures.length}</div>
+        </div>
+        <div className="bg-[var(--card-2)] p-2 rounded text-center text-sm">
+          <div className="text-xs text-[var(--muted)]">With Scores</div>
+          <div className="font-bold text-green-400">{hasScores}</div>
+        </div>
+      </div>
+      {needScores.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs text-[var(--muted)] mb-2">{needScores.length} finished matches need scores:</p>
+          {needScores.map(f => (
+            <div key={f.id} className="flex items-center gap-2 p-2 bg-[var(--card-2)] rounded text-xs">
+              {editId === f.id ? (
+                <>
+                  <span className="flex-1 truncate">{f.home_team} vs {f.away_team}</span>
+                  <input type="number" min="0" value={h} onChange={(e) => setH(e.target.value)} className="w-8 bg-[var(--bg)] rounded px-1 text-center" />
+                  <span>-</span>
+                  <input type="number" min="0" value={a} onChange={(e) => setA(e.target.value)} className="w-8 bg-[var(--bg)] rounded px-1 text-center" />
+                  <button onClick={() => save(f.id)} className="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">Save</button>
+                  <button onClick={() => setEditId(null)} className="text-[var(--muted)]">✕</button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 truncate">{f.home_team} vs {f.away_team}</span>
+                  <button onClick={() => { setEditId(f.id); setH(""); setA(""); }} className="px-2 py-1 text-xs bg-[var(--card-3)] rounded hover:bg-[var(--gold)] hover:text-black">Edit</button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-center text-green-400">✓ All finished matches have scores!</p>
+      )}
+    </div>
+  );
+}
 
 export function Admin({ pool, userId, members: initialMembers, ownedPools: initialOwnedPools, fixtures: initialFixtures }: {
   pool: Pool;
@@ -306,13 +367,7 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
       </div>
 
       {/* === Fixture Score Manager === */}
-      {initialFixtures ? (
-        <FixtureScoreManager fixtures={initialFixtures} />
-      ) : (
-        <div className="card">
-          <p className="text-[var(--muted)]">Fixture Score Manager: Loading fixtures... ({initialFixtures?.length ?? 0} fixtures)</p>
-        </div>
-      )}
+      {initialFixtures && initialFixtures.length > 0 && <FixtureScoreManagerInline fixtures={initialFixtures} />}
 
       {/* === Danger zone — delete any pool you own === */}
       <div className="card" style={{ borderColor: "var(--crimson)" }}>
