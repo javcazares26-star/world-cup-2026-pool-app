@@ -306,8 +306,12 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
       </div>
 
       {/* === Fixture Score Manager === */}
-      {initialFixtures && initialFixtures.length > 0 && (
+      {initialFixtures ? (
         <FixtureScoreManager fixtures={initialFixtures} />
+      ) : (
+        <div className="card">
+          <p className="text-[var(--muted)]">Fixture Score Manager: Loading fixtures... ({initialFixtures?.length ?? 0} fixtures)</p>
+        </div>
       )}
 
       {/* === Danger zone — delete any pool you own === */}
