@@ -228,7 +228,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           </div>
 
             {/* UPCOMING MATCHES (grouped by day) — shown at top */}
-            <UpcomingMatches fixtures={fixtures} picks={picks} onSave={upsertPick} userLocation={myLocation} />
+            <UpcomingMatches fixtures={fixtures} picks={picks} onSave={upsertPick} userLocation={myLocation} isAdmin={isOwner} />
 
             {/* STAGE TOGGLE */}
             <div className="card !p-2 flex gap-2 mb-4">
@@ -288,7 +288,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                       {group}
                     </div>
                     {filteredMatches.map(m => (
-                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} />
+                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} isAdmin={isOwner} />
                     ))}
                   </div>
                 );
@@ -337,7 +337,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                   <div className="space-y-0">
                     {ms.sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime())
                       .map(m => (
-                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} />
+                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} isAdmin={isOwner} />
                     ))}
                   </div>
                 </div>

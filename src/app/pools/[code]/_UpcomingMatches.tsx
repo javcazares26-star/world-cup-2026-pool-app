@@ -8,9 +8,10 @@ type Props = {
   picks: Pick[];
   onSave: (fixtureId: number, home: number, away: number) => void;
   userLocation: string | null;
+  isAdmin?: boolean;
 };
 
-export function UpcomingMatches({ fixtures, picks, onSave, userLocation }: Props) {
+export function UpcomingMatches({ fixtures, picks, onSave, userLocation, isAdmin }: Props) {
   // Get upcoming matches (not finished, not started)
   const upcomingFixtures = useMemo(() => {
     return fixtures.filter(f => f.status_short === "NS").sort((a, b) =>
@@ -55,6 +56,7 @@ export function UpcomingMatches({ fixtures, picks, onSave, userLocation }: Props
                   onSave={onSave}
                   showScore={false}
                   userLocation={userLocation}
+                  isAdmin={isAdmin}
                 />
               ))}
             </div>

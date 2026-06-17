@@ -11,6 +11,7 @@ type Props = {
   showScore?: boolean;
   userLocation: string | null;
   onSave: (fixtureId: number, home: number, away: number) => void;
+  isAdmin?: boolean;
 };
 
 const DEFAULT_LOCK_LEAD_MS = 2 * 60 * 60 * 1000; // picks lock 2 hours before kickoff
@@ -24,10 +25,14 @@ function getLockLeadMs(fixture: Fixture): number {
   return isCanadaBosnia ? CANADA_BOSNIA_LOCK_MS : DEFAULT_LOCK_LEAD_MS;
 }
 
-export function MatchRow({ fixture, pick, showActual, showScore, userLocation, onSave }: Props) {
+export function MatchRow({ fixture, pick, showActual, showScore, userLocation, onSave, isAdmin }: Props) {
   const [home, setHome] = useState(pick?.home_pick ?? 0);
   const [away, setAway] = useState(pick?.away_pick ?? 0);
   const [saved, setSaved] = useState(false);
+  const [editingScore, setEditingScore] = useState(false);
+  const [editHome, setEditHome] = useState(fixture.home_score?.toString() ?? "");
+  const [editAway, setEditAway] = useState(fixture.away_score?.toString() ?? "");
+  const [savingScore, setSavingScore] = useState(false);
   // Tick re-renders the row frequently to keep countdown accurate
   // Updates every 1 second when within 10 minutes of lock, every 15s otherwise
   const [now, setNow] = useState<number>(() => Date.now());
@@ -35,6 +40,17 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
   useEffect(() => {
     if (pick) { setHome(pick.home_pick); setAway(pick.away_pick); }
   }, [pick]);
+
+  const saveActualScore = async () => {
+    setSavingScore(true);
+    const supabase = (await import("@/lib/supabase/client")).createClient();
+    await supabase
+      .from("fixtures")
+      .update({ home_score: parseInt(editHome || "0"), away_score: parseInt(editAway || "0") })
+      .eq("id", fixture.id);
+    setSavingScore(false);
+    setEditingScore(false);
+  };
 
   const lockLeadMs = getLockLeadMs(fixture);
 
@@ -172,28 +188,77 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
         {/* Show actual score for finished matches */}
         {isFinal && (fixture.home_score !== null || fixture.away_score !== null) && (
           <div className="bg-[var(--bg-2)] rounded p-2 mt-2 border border-[var(--border)]">
-            <div className="text-[10px] text-[var(--muted)] mb-1 uppercase tracking-wider">
-              Final Score
-            </div>
-            <div className="flex justify-between items-center text-sm font-bold">
-              <span>{fixture.home_team}</span>
-              <span className="px-3 py-1 bg-[var(--card-2)] rounded">{fixture.home_score} - {fixture.away_score}</span>
-              <span>{fixture.away_team}</span>
-            </div>
-            {/* Show points earned */}
-            <div className="mt-2 text-xs text-center">
-              {pick && (
-                (() => {
-                  if (pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score) {
-                    return <span className="text-[var(--pitch-light)] font-bold">✅ Exact Match! +3 points</span>;
-                  }
-                  if (Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0))) {
-                    return <span className="text-[var(--gold)] font-bold">⭐ Correct Outcome! +1 point</span>;
-                  }
-                  return <span className="text-[var(--crimson)]">❌ No points</span>;
-                })()
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider">
+                Final Score
+              </div>
+              {isAdmin && !editingScore && (
+                <button
+                  onClick={() => {
+                    setEditingScore(true);
+                    setEditHome(fixture.home_score?.toString() ?? "");
+                    setEditAway(fixture.away_score?.toString() ?? "");
+                  }}
+                  className="text-xs px-2 py-1 rounded bg-[var(--card-3)] text-[var(--gold)] hover:bg-[var(--gold)] hover:text-black transition"
+                >
+                  ✎ Edit
+                </button>
               )}
             </div>
+            {editingScore ? (
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="number"
+                  min="0"
+                  value={editHome}
+                  onChange={(e) => setEditHome(e.target.value)}
+                  className="w-12 bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-center font-bold"
+                />
+                <span className="text-xs">-</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={editAway}
+                  onChange={(e) => setEditAway(e.target.value)}
+                  className="w-12 bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-center font-bold"
+                />
+                <button
+                  onClick={saveActualScore}
+                  disabled={savingScore}
+                  className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                >
+                  {savingScore ? "..." : "Save"}
+                </button>
+                <button
+                  onClick={() => setEditingScore(false)}
+                  className="text-xs text-[var(--muted)]"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div className="flex justify-between items-center text-sm font-bold">
+                <span>{fixture.home_team}</span>
+                <span className="px-3 py-1 bg-[var(--card-2)] rounded">{fixture.home_score} - {fixture.away_score}</span>
+                <span>{fixture.away_team}</span>
+              </div>
+            )}
+            {/* Show points earned */}
+            {!editingScore && (
+              <div className="mt-2 text-xs text-center">
+                {pick && (
+                  (() => {
+                    if (pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score) {
+                      return <span className="text-[var(--pitch-light)] font-bold">✅ Exact Match! +3 points</span>;
+                    }
+                    if (Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0))) {
+                      return <span className="text-[var(--gold)] font-bold">⭐ Correct Outcome! +1 point</span>;
+                    }
+                    return <span className="text-[var(--crimson)]">❌ No points</span>;
+                  })()
+                )}
+              </div>
+            )}
           </div>
         )}
 
