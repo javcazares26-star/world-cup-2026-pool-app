@@ -20,9 +20,9 @@ export function Leaderboard({ rows, meId, pool }: { rows: LeaderboardRow[]; meId
           <tr className="text-[11px] uppercase tracking-wider text-[var(--muted)]">
             <th className="text-left p-3">#</th>
             <th className="text-left p-3">Player</th>
-            <th className="text-left p-3">Points</th>
-            <th className="text-left p-3">Exact Score</th>
-            <th className="text-left p-3">Match Points</th>
+            <th className="text-right p-3">Points</th>
+            <th className="text-right p-3">Exact</th>
+            <th className="text-right p-3">Correct</th>
           </tr>
         </thead>
         <tbody>
@@ -45,9 +45,15 @@ export function Leaderboard({ rows, meId, pool }: { rows: LeaderboardRow[]; meId
                   {r.avatar_url && <img src={r.avatar_url} alt="" className="w-7 h-7 rounded-full" />}
                   <span className={me ? "font-bold" : ""}>{r.display_name}{me && " 👤"}</span>
                 </td>
-                <td className="p-3 font-bold text-[var(--gold)]">{r.points}</td>
-                <td className="p-3 text-[var(--pitch-light)]">{r.exact_score}x3</td>
-                <td className="p-3 text-[var(--muted)]">{r.match_points}x1</td>
+                <td className="p-3 text-right font-bold text-[var(--gold)]">{r.points}</td>
+                <td className="p-3 text-right">
+                  <span className="text-[var(--pitch-light)] font-semibold">{r.exact_count ?? 0}</span>
+                  <span className="text-[10px] text-[var(--muted)] ml-1">×3</span>
+                </td>
+                <td className="p-3 text-right">
+                  <span className="text-[var(--gold)] font-semibold">{r.correct_count ?? 0}</span>
+                  <span className="text-[10px] text-[var(--muted)] ml-1">×1</span>
+                </td>
               </tr>
             );
           })}

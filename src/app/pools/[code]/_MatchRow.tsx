@@ -186,7 +186,7 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
         </div>
 
         {/* Show actual score for finished matches */}
-        {isFinal && (fixture.home_score !== null || fixture.away_score !== null) && (
+        {isFinal && fixture.home_score !== null && fixture.away_score !== null && (
           <div className="bg-[var(--bg-2)] rounded p-2 mt-2 border border-[var(--border)]">
             <div className="flex items-center justify-between mb-1">
               <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider">

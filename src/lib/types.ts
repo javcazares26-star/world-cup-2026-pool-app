@@ -60,6 +60,7 @@ export type LeaderboardRow = {
   picks_made: number;
   points: number;
   exact_count: number;
+  correct_count?: number; // Number of correct match outcomes
 };
 
 export type Message = {
