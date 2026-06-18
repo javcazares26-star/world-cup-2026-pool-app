@@ -22,7 +22,7 @@ export function Leaderboard({ rows, meId, pool }: { rows: LeaderboardRow[]; meId
             <th className="text-left p-3">Player</th>
             <th className="text-right p-3">Points</th>
             <th className="text-right p-3">Exact</th>
-            <th className="text-right p-3">Correct</th>
+            <th className="text-right p-3">Match Outcome</th>
           </tr>
         </thead>
         <tbody>
