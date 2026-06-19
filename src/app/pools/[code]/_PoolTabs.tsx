@@ -92,10 +92,26 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   // ====== REALTIME: listen for picks updates (new default picks from backfill) ======
   useEffect(() => {
     const supabase = createClient();
+
+    // First, refetch all picks for this user to catch any that were created while offline
+    (async () => {
+      const { data } = await supabase
+        .from("picks")
+        .select("*")
+        .eq("pool_id", pool.id)
+        .eq("user_id", userId);
+      if (data) setPicks(data);
+    })();
+
+    // Then listen for real-time changes
     const ch = supabase
       .channel(`picks-changes-${pool.id}-${userId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "picks", filter: `pool_id=eq.${pool.id},user_id=eq.${userId}` }, (payload) => {
-        setPicks(prev => [...prev, payload.new as Pick]);
+        setPicks(prev => {
+          // Avoid duplicates
+          const exists = prev.some(p => p.id === (payload.new as any).id);
+          return exists ? prev : [...prev, payload.new as Pick];
+        });
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "picks", filter: `pool_id=eq.${pool.id},user_id=eq.${userId}` }, (payload) => {
         setPicks(prev => prev.map(p => p.id === (payload.new as any).id ? (payload.new as Pick) : p));
@@ -272,6 +288,37 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                 </select>
               )}
             </div>
+
+            {/* TODAY'S MATCHES - HIGHLIGHTED AT TOP */}
+            {(() => {
+              const now = new Date();
+              const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+              const todaysMatches = groupStageFixtures
+                .filter(f => {
+                  const kickoff = new Date(f.kickoff_utc);
+                  return kickoff >= todayStart && kickoff < todayEnd && f.status_short === "NS";
+                })
+                .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
+
+              if (todaysMatches.length > 0) {
+                return (
+                  <div className="card !p-0 overflow-hidden mb-6 border-2 border-[var(--gold)]">
+                    <div className="group-banner px-4 py-3 border-b-2 border-[var(--gold)] bg-[var(--gold)] bg-opacity-10 text-sm font-bold text-[var(--gold)]">
+                      🎯 TODAY'S MATCHES — Make Your Picks!
+                    </div>
+                    <div className="space-y-0">
+                      {todaysMatches.map(m => (
+                        <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} userLocation={myLocation} isAdmin={isOwner} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(groupedByStage.groups).map(([group, ms]) => {
                 // Filter matches by selected date if one is chosen
