@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Pool, Fixture } from "@/lib/types";
+import { ScoreManager } from "./_ScoreManager";
 
 export type Member = {
   user_id: string;
@@ -366,8 +367,16 @@ export function Admin({ pool, userId, members: initialMembers, ownedPools: initi
         </table>
       </div>
 
-      {/* === Fixture Score Manager === */}
-      {initialFixtures && initialFixtures.length > 0 && <FixtureScoreManagerInline fixtures={initialFixtures} />}
+      {/* === New Fixture Score Manager === */}
+      {initialFixtures && initialFixtures.length > 0 && (
+        <ScoreManager
+          fixtures={initialFixtures}
+          onScoresUpdated={() => {
+            // Refresh the page to see updated leaderboard
+            window.location.reload();
+          }}
+        />
+      )}
 
       {/* === Danger zone — delete any pool you own === */}
       <div className="card" style={{ borderColor: "var(--crimson)" }}>
