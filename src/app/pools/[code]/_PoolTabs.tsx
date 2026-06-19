@@ -292,7 +292,11 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             {/* TODAY'S MATCHES - HIGHLIGHTED AT TOP */}
             {(() => {
               const now = new Date();
-              const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              // Get today's date in UTC to match kickoff_utc
+              const utcYear = now.getUTCFullYear();
+              const utcMonth = now.getUTCMonth();
+              const utcDate = now.getUTCDate();
+              const todayStart = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0));
               const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
               const todaysMatches = groupStageFixtures
