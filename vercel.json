@@ -1,5 +1,4 @@
 {
-  "comment": "Hobby plan allows a max of 2 cron jobs, each running at most once per day. The every-5-min fixture/score sync is handled by an external cron-job.org pinger hitting /api/cron/sync-fixtures?secret=CRON_SECRET, so it is intentionally NOT declared here. If you upgrade to Vercel Pro, you can re-add { \"path\": \"/api/cron/sync-fixtures\", \"schedule\": \"*/5 * * * *\" } and tighten the others.",
   "crons": [
     {
       "path": "/api/cron/create-default-picks",
