@@ -10,6 +10,7 @@ import { FairPlay } from "./_FairPlay";
 import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
+import { PotentialBracket } from "./_PotentialBracket";
 import { WinnerPick } from "./_WinnerPick";
 import { AdminPicks } from "./_AdminPicks";
 import type { Message } from "@/lib/types";
@@ -366,6 +367,9 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
               🏆 Knockout Stage
             </h2>
+
+            {/* Potential Bracket based on current group standings */}
+            <PotentialBracket fixtures={fixtures} />
 
             {/* 3rd Place Standings */}
             <div className="mb-6">
