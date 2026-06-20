@@ -31,7 +31,46 @@ export async function GET(req: Request) {
   if (!ok) return unauthorized();
 
   const supabase = createAdminClient();
-  const mode = url.searchParams.get("mode") ?? "auto";  // "live" | "full" | "auto"
+  const mode = url.searchParams.get("mode") ?? "auto";  // "live" | "full" | "auto" | "diag"
+
+  // ---- Diagnostic mode: read-only. Reveals whether API-Football returns data,
+  //      what IDs/names it uses, and whether any match the rows in our DB. ----
+  if (mode === "diag") {
+    try {
+      const apiFixtures = await fetchAllFixtures();
+      const { data: dbRows } = await supabase
+        .from("fixtures")
+        .select("id, home_team, away_team, kickoff_utc");
+      const dbIds = new Set((dbRows ?? []).map((r: any) => r.id));
+      const overlap = apiFixtures.filter(f => dbIds.has(f.id)).length;
+      return NextResponse.json({
+        diag: true,
+        env: {
+          keyPresent: !!process.env.API_FOOTBALL_KEY,
+          league: process.env.API_FOOTBALL_LEAGUE_ID ?? "1",
+          season: process.env.API_FOOTBALL_SEASON ?? "2026",
+        },
+        api: {
+          count: apiFixtures.length,
+          withScores: apiFixtures.filter(f => f.home_score !== null).length,
+          sample: apiFixtures.slice(0, 8).map(f => ({
+            id: f.id, home: f.home_team, away: f.away_team,
+            date: f.kickoff_utc, status: f.status_short,
+            score: `${f.home_score ?? "-"}-${f.away_score ?? "-"}`,
+          })),
+        },
+        db: {
+          count: dbRows?.length ?? 0,
+          apiIdsAlreadyInDb: overlap,
+          sample: (dbRows ?? []).slice(0, 8).map((r: any) => ({
+            id: r.id, home: r.home_team, away: r.away_team, date: r.kickoff_utc,
+          })),
+        },
+      });
+    } catch (err: any) {
+      return NextResponse.json({ diag: true, error: err.message ?? "diag failed" }, { status: 500 });
+    }
+  }
 
   try {
     let upserted: any[] = [];

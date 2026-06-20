@@ -12,11 +12,18 @@ type Props = {
 };
 
 export function UpcomingMatches({ fixtures, picks, onSave, userLocation, isAdmin }: Props) {
-  // Get upcoming matches (not finished, not started)
+  // Get genuinely upcoming GROUP-STAGE matches: not started, kickoff still in
+  // the future (so past matches that haven't synced a result don't linger here),
+  // and excluding knockout fixtures (those live under the Knockout Stage view).
   const upcomingFixtures = useMemo(() => {
-    return fixtures.filter(f => f.status_short === "NS").sort((a, b) =>
-      new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime()
-    );
+    const now = Date.now();
+    return fixtures
+      .filter(f =>
+        f.status_short === "NS" &&
+        !f.is_knockout &&
+        new Date(f.kickoff_utc).getTime() > now
+      )
+      .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
   }, [fixtures]);
 
   // Group by day

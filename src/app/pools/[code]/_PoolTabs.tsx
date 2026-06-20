@@ -33,7 +33,6 @@ type Props = {
 export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: initialPicks, leaderboard: initialLb, messages: initialMessages, members: initialMembers, ownedPools, initialTab }: Props) {
   const isOwner = pool.owner_id === userId;
   const [tab, setTab] = useState(initialTab);
-  const [picksStage, setPicksStage] = useState<"groups" | "knockout">("groups");
   const [fixtures, setFixtures] = useState(initialFixtures);
   const [picks, setPicks] = useState(initialPicks);
   const [leaderboard, setLeaderboard] = useState(initialLb);
@@ -216,6 +215,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
         {([
           ["winner", "🏆 Winner"],
           ["picks", "📝 Picks"],
+          ["knockout", "⚔️ Knockout"],
           ["fairplay", "📊 Groups Live"],
           ["members", "👥 Members"],
           ["leaderboard", "🥇 Leaderboard"],
@@ -249,30 +249,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             {/* UPCOMING MATCHES (grouped by day) — shown at top */}
             <UpcomingMatches fixtures={fixtures} picks={picks} onSave={upsertPick} userLocation={myLocation} isAdmin={isOwner} />
 
-            {/* STAGE TOGGLE */}
-            <div className="card !p-2 flex gap-2 mb-4">
-              <button
-                onClick={() => setPicksStage("groups")}
-                className={"px-4 py-2 rounded-lg text-sm font-semibold transition-colors " +
-                  (picksStage === "groups"
-                    ? "bg-[var(--gold)] text-[#1a1a1a]"
-                    : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]")}
-              >
-                📋 Groups Stage
-              </button>
-              <button
-                onClick={() => setPicksStage("knockout")}
-                className={"px-4 py-2 rounded-lg text-sm font-semibold transition-colors " +
-                  (picksStage === "knockout"
-                    ? "bg-[var(--gold)] text-[#1a1a1a]"
-                    : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]")}
-              >
-                🏆 Knockout Stage
-              </button>
-            </div>
-
             {/* GROUPS STAGE SECTION */}
-            {picksStage === "groups" && (
             <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-[var(--gold)] flex items-center gap-2">
@@ -361,53 +338,51 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               )}
             </div>
           </div>
-          )}
-
-          {/* KNOCKOUT STAGE SECTION */}
-          {picksStage === "knockout" && (
-          <div>
-            <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
-              🏆 Knockout Stage
-            </h2>
-
-            {/* Potential Bracket based on current group standings */}
-            <PotentialBracket fixtures={fixtures} picks={picks} />
-
-            {/* 3rd Place Standings */}
-            <div className="mb-6">
-              <ThirdPlaceStandings fixtures={fixtures} picks={picks} />
-            </div>
-
-            <div className="space-y-4">
-              {Object.entries(groupedByStage.elim)
-                .sort(([a], [b]) => {
-                  const order = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "3RD PLACE FINAL", "3rd Place Final", "Final"];
-                  const aIdx = order.findIndex(o => o.toUpperCase() === (a ?? "").toUpperCase());
-                  const bIdx = order.findIndex(o => o.toUpperCase() === (b ?? "").toUpperCase());
-                  return (aIdx >= 0 ? aIdx : 999) - (bIdx >= 0 ? bIdx : 999);
-                })
-                .map(([round, ms]) => (
-                <div key={round} className="card !p-0 overflow-hidden">
-                  <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
-                    {round}
-                  </div>
-                  <div className="space-y-0">
-                    {ms.sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime())
-                      .map(m => (
-                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} isAdmin={isOwner} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-              {eliminationFixtures.length === 0 && (
-                <div className="card text-center">
-                  <p className="text-[var(--muted)]">Knockout fixtures will appear after the group stage. Check back when they're available!</p>
-                </div>
-              )}
-            </div>
-          </div>
-          )}
         </>
+      )}
+
+      {tab === "knockout" && (
+        <div>
+          <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
+            ⚔️ Knockout Stage
+          </h2>
+
+          {/* Potential Bracket based on current group standings */}
+          <PotentialBracket fixtures={fixtures} picks={picks} />
+
+          {/* 3rd Place Standings */}
+          <div className="mb-6">
+            <ThirdPlaceStandings fixtures={fixtures} picks={picks} />
+          </div>
+
+          <div className="space-y-4">
+            {Object.entries(groupedByStage.elim)
+              .sort(([a], [b]) => {
+                const order = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "3RD PLACE FINAL", "3rd Place Final", "Final"];
+                const aIdx = order.findIndex(o => o.toUpperCase() === (a ?? "").toUpperCase());
+                const bIdx = order.findIndex(o => o.toUpperCase() === (b ?? "").toUpperCase());
+                return (aIdx >= 0 ? aIdx : 999) - (bIdx >= 0 ? bIdx : 999);
+              })
+              .map(([round, ms]) => (
+              <div key={round} className="card !p-0 overflow-hidden">
+                <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
+                  {round}
+                </div>
+                <div className="space-y-0">
+                  {ms.sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime())
+                    .map(m => (
+                    <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} isAdmin={isOwner} />
+                  ))}
+                </div>
+              </div>
+            ))}
+            {eliminationFixtures.length === 0 && (
+              <div className="card text-center">
+                <p className="text-[var(--muted)]">Knockout fixtures will appear after the group stage. Check back when they're available!</p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {tab === "fairplay" && (

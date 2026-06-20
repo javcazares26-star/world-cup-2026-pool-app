@@ -145,8 +145,9 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
       <div className={showScore ? "space-y-2" : ""}>
         <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center">
           <div className="flex items-center gap-2 min-w-0">
-            {fixture.home_logo && <img src={fixture.home_logo} alt="" className="w-6 h-6" />}
-            <span className="text-lg">{getTeamFlag(fixture.home_team)}</span>
+            {fixture.home_logo
+              ? <img src={fixture.home_logo} alt="" className="w-6 h-6" />
+              : <span className="text-lg">{getTeamFlag(fixture.home_team)}</span>}
             <span className="font-medium text-sm truncate">{fixture.home_team}</span>
           </div>
           <div className="flex items-center gap-1 bg-[var(--bg-2)] border border-[var(--border)] rounded-lg p-1">
@@ -180,8 +181,9 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
           </div>
           <div className="flex items-center gap-2 justify-end min-w-0">
             <span className="font-medium text-sm truncate text-right">{fixture.away_team}</span>
-            <span className="text-lg">{getTeamFlag(fixture.away_team)}</span>
-            {fixture.away_logo && <img src={fixture.away_logo} alt="" className="w-6 h-6" />}
+            {fixture.away_logo
+              ? <img src={fixture.away_logo} alt="" className="w-6 h-6" />
+              : <span className="text-lg">{getTeamFlag(fixture.away_team)}</span>}
           </div>
         </div>
 
