@@ -34,7 +34,7 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
       const matchesStatus = filterStatus === "all" || f.status_short === filterStatus;
 
       return matchesSearch && matchesStatus;
-    }).sort((a, b) => new Date(b.kickoff_utc).getTime() - new Date(a.kickoff_utc).getTime());
+    }).sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
   }, [fixtures, searchTerm, filterStatus]);
 
   const updateFixture = (fixtureId: number, field: keyof FixtureEdit, value: string | number) => {

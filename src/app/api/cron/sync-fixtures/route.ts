@@ -20,6 +20,34 @@ function unauthorized() {
   return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 }
 
+/**
+ * Canonicalize a team name so API-Football names and our seeded names match.
+ * Strips accents/punctuation/case, then collapses known naming variants.
+ */
+function canonTeam(name: string): string {
+  let s = (name || "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "") // strip accents (Curaçao -> Curacao)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, ""); // drop spaces, dots, ampersands, slashes
+  const aliases: Record<string, string> = {
+    repofkorea: "korea", southkorea: "korea", korearepublic: "korea", koreasouth: "korea", korearep: "korea",
+    czechrep: "czech", czechia: "czech", czechrepublic: "czech",
+    bosniaherzeg: "bosnia", bosniaherzegovina: "bosnia", bosniaandherzegovina: "bosnia",
+    drcongo: "congo", congodr: "congo", democraticrepublicofcongo: "congo", congodemocraticrepublic: "congo",
+    capeverde: "capeverde", capeverdeislands: "capeverde", caboverde: "capeverde",
+    usa: "usa", unitedstates: "usa", unitedstatesofamerica: "usa", us: "usa",
+    ivorycoast: "ivorycoast", cotedivoire: "ivorycoast",
+    turkey: "turkey", turkiye: "turkey",
+    iran: "iran", iranislamicrepublic: "iran",
+  };
+  return aliases[s] ?? s;
+}
+
+/** Order-independent key for a fixture's two teams. */
+function pairKey(a: string, b: string): string {
+  return [canonTeam(a), canonTeam(b)].sort().join("|");
+}
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const headerSecret = req.headers.get("x-cron-secret") ?? req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -93,23 +121,44 @@ export async function GET(req: Request) {
       }
     }
 
-    // Log sample of fixtures with scores for debugging
-    const fixturesWithScores = upserted.filter(f => f.home_score !== null && f.away_score !== null);
-    console.log(`[Sync Fixtures] Total fetched: ${upserted.length}, With scores: ${fixturesWithScores.length}`);
-    if (fixturesWithScores.length > 0) {
-      console.log(`[Sync Fixtures] Sample with scores:`, fixturesWithScores.slice(0, 3).map(f => ({
-        id: f.id,
-        teams: `${f.home_team} vs ${f.away_team}`,
-        score: `${f.home_score}-${f.away_score}`,
-        status: f.status_short,
-      })));
+    // Match each API fixture to our seeded row by team-pair and update THAT
+    // row's score/status — never insert API-id duplicates. Knockout seed rows
+    // carry placeholder names (1A, 3-ABCDF) so they won't match until teams are
+    // determined; those are skipped here and handled via the bracket.
+    const { data: seedRows } = await supabase
+      .from("fixtures")
+      .select("*")
+      .lt("id", 1000000); // seeded rows are 900001-900104; API rows are >= 1,000,000
+
+    const seedByPair = new Map<string, any>();
+    for (const r of seedRows ?? []) {
+      if (r.is_knockout) continue; // only group-stage rows have real team names
+      seedByPair.set(pairKey(r.home_team, r.away_team), r);
     }
 
-    if (upserted.length) {
-      const { error } = await supabase.from("fixtures").upsert(
-        upserted.map(f => ({ ...f, updated_at: new Date().toISOString() })),
-        { onConflict: "id" }
-      );
+    const updates: any[] = [];
+    const unmatched: string[] = [];
+    const nowIso = new Date().toISOString();
+    for (const f of upserted) {
+      const row = seedByPair.get(pairKey(f.home_team, f.away_team));
+      if (!row) { unmatched.push(`${f.home_team} vs ${f.away_team}`); continue; }
+      // Orient API scores to the seeded row's home/away order
+      const sameOrientation = canonTeam(row.home_team) === canonTeam(f.home_team);
+      updates.push({
+        ...row,
+        home_score: sameOrientation ? f.home_score : f.away_score,
+        away_score: sameOrientation ? f.away_score : f.home_score,
+        status: f.status,
+        status_short: f.status_short,
+        minute: f.minute,
+        updated_at: nowIso,
+      });
+    }
+
+    console.log(`[Sync Fixtures] api:${upserted.length} matched:${updates.length} unmatched:${unmatched.length}`, unmatched.slice(0, 10));
+
+    if (updates.length) {
+      const { error } = await supabase.from("fixtures").upsert(updates, { onConflict: "id" });
       if (error) throw error;
     }
 
@@ -128,7 +177,13 @@ export async function GET(req: Request) {
         .in("fixture_id", lockableIds);
     }
 
-    return NextResponse.json({ ok: true, count: upserted.length, mode });
+    return NextResponse.json({
+      ok: true, mode,
+      apiCount: upserted.length,
+      matched: updates.length,
+      unmatched: unmatched.length,
+      unmatchedSample: unmatched.slice(0, 10),
+    });
   } catch (err: any) {
     console.error("sync-fixtures error", err);
     return NextResponse.json({ error: err.message ?? "sync failed" }, { status: 500 });

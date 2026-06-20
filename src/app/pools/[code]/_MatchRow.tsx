@@ -187,9 +187,35 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
           </div>
         </div>
 
+        {/* Live score box for in-progress matches */}
+        {isLive && (fixture.home_score !== null || fixture.away_score !== null) && (
+          <div
+            className="rounded p-3 mt-2 border"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--crimson) 12%, transparent)",
+              borderColor: "color-mix(in srgb, var(--crimson) 45%, transparent)",
+            }}
+          >
+            <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--crimson)] mb-1">
+              🔴 Live{fixture.minute != null ? ` · ${fixture.minute}'` : ""}
+            </div>
+            <div className="flex justify-between items-center text-sm font-bold text-[var(--text)]">
+              <span>{fixture.home_team}</span>
+              <span className="px-3 py-1 bg-[var(--card-2)] rounded">{fixture.home_score ?? 0} - {fixture.away_score ?? 0}</span>
+              <span>{fixture.away_team}</span>
+            </div>
+          </div>
+        )}
+
         {/* Show actual score for finished matches */}
         {isFinal && fixture.home_score !== null && fixture.away_score !== null && (
-          <div className="bg-[var(--pitch-light)] bg-opacity-10 rounded p-3 mt-2 border-2 border-[var(--pitch-light)]">
+          <div
+            className="rounded p-3 mt-2 border"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--pitch-light) 15%, transparent)",
+              borderColor: "color-mix(in srgb, var(--pitch-light) 45%, transparent)",
+            }}
+          >
             <div className="flex items-center justify-between mb-1">
               <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider">
                 Final Score
@@ -264,8 +290,8 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
           </div>
         )}
 
-        {/* Real-time score display side-by-side with picks */}
-        {showScore && !isFinal && (fixture.home_score !== null || fixture.away_score !== null) && (
+        {/* Real-time score display side-by-side with picks (non-live; live uses the box above) */}
+        {showScore && !isFinal && !isLive && (fixture.home_score !== null || fixture.away_score !== null) && (
           <div className="flex justify-between items-center px-1 text-xs">
             <div className="text-[var(--muted)]">
               Your pick: <span className="font-bold text-white">{home} vs {away}</span>
