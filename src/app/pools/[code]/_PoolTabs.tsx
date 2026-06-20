@@ -371,7 +371,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             </h2>
 
             {/* Potential Bracket based on current group standings */}
-            <PotentialBracket fixtures={fixtures} />
+            <PotentialBracket fixtures={fixtures} picks={picks} />
 
             {/* 3rd Place Standings */}
             <div className="mb-6">
@@ -419,7 +419,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       )}
 
       {tab === "leaderboard" && (
-        <Leaderboard rows={leaderboard} meId={userId} pool={{ ...pool, admin_hidden: poolAdminHidden }} />
+        <Leaderboard rows={leaderboard} meId={userId} pool={{ ...pool, admin_hidden: poolAdminHidden }} fixtures={fixtures} />
       )}
 
       {tab === "admin-picks" && isOwner && (

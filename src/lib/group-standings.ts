@@ -194,3 +194,119 @@ export function getQualified3rdPlaceTeams(
 ): TeamStanding[] {
   return getRanked3rdPlaceTeams(fixtures, picks).slice(0, 8);
 }
+
+/* ------------------------------------------------------------------ *
+ * Knockout slot resolution
+ * ------------------------------------------------------------------ *
+ * Knockout fixtures carry "slot codes" instead of real team names
+ * until the group stage determines who qualifies. Examples:
+ *   "1A"      -> winner of Group A
+ *   "2B"      -> runner-up of Group B
+ *   "3-ABCDF" -> a qualifying 3rd-place team from one of groups A,B,C,D,F
+ *   "W74"     -> winner of match 74 (resolved later, not by group position)
+ *
+ * This module resolves the group-position slots (1X / 2X / 3X / 3-XXXX)
+ * into the real teams currently occupying those positions, based on the
+ * live group standings computed from actual match results.
+ */
+
+const GROUP_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+
+function groupLetter(standing: TeamStanding): string {
+  // standing.group looks like "Group A"
+  return (standing.group || "").replace(/^Group\s+/i, "").trim().toUpperCase();
+}
+
+/** True when a string is a group-position slot code rather than a real team name. */
+export function isGroupSlot(code: string | null | undefined): boolean {
+  if (!code) return false;
+  return /^[123][A-L]$/.test(code) || /^3-[A-L]+$/i.test(code);
+}
+
+/** True when a string is any unresolved knockout placeholder (slot or W#/L#). */
+export function isPlaceholder(code: string | null | undefined): boolean {
+  if (!code) return true;
+  if (code.toUpperCase() === "TBD") return true;
+  if (isGroupSlot(code)) return true;
+  return /^[WL]\d+$/i.test(code);
+}
+
+/**
+ * Build a map of group-position slot codes -> real team names, using the
+ * current (live) group standings. Only resolves slots we can determine now;
+ * undeterminable slots are simply omitted from the map.
+ */
+export function resolveBracketSlots(
+  fixtures: Fixture[],
+  picks: Pick[]
+): Record<string, string> {
+  const resolved: Record<string, string> = {};
+
+  // Per-group standings keyed by letter
+  const byLetter: Record<string, TeamStanding[]> = {};
+  for (const letter of GROUP_LETTERS) {
+    byLetter[letter] = calculateGroupStandings(fixtures, picks, `Group ${letter}`);
+  }
+
+  // Direct 1X / 2X / 3X slots
+  for (const letter of GROUP_LETTERS) {
+    const s = byLetter[letter];
+    if (s[0]) resolved[`1${letter}`] = s[0].team;
+    if (s[1]) resolved[`2${letter}`] = s[1].team;
+    if (s[2]) resolved[`3${letter}`] = s[2].team;
+  }
+
+  // Ranked, qualified 3rd-place teams (top 8 of the determined 3rd-placed teams)
+  const thirds: TeamStanding[] = GROUP_LETTERS
+    .map((l) => byLetter[l][2])
+    .filter(Boolean) as TeamStanding[];
+  thirds.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+    return b.goalsFor - a.goalsFor;
+  });
+  const qualifiedThirds = thirds.slice(0, 8);
+
+  // Gather distinct "3-XXXX" combination slots that actually appear in the fixtures
+  const comboSlots = new Set<string>();
+  for (const f of fixtures) {
+    for (const code of [f.qualified_team_home, f.qualified_team_away, f.home_team, f.away_team]) {
+      if (code && /^3-[A-L]+$/i.test(code)) comboSlots.add(code.toUpperCase());
+    }
+  }
+
+  if (comboSlots.size > 0 && qualifiedThirds.length > 0) {
+    const slotList = Array.from(comboSlots).map((slot) => ({
+      slot,
+      allowed: new Set(slot.replace(/^3-/, "").split("")),
+    }));
+
+    // Maximum bipartite matching (Kuhn's algorithm): slots <-> qualified 3rd teams
+    const teamLetters = qualifiedThirds.map((t) => groupLetter(t));
+    const matchTeamToSlot: number[] = new Array(qualifiedThirds.length).fill(-1);
+
+    const tryAssign = (slotIdx: number, seen: boolean[]): boolean => {
+      for (let ti = 0; ti < qualifiedThirds.length; ti++) {
+        if (slotList[slotIdx].allowed.has(teamLetters[ti]) && !seen[ti]) {
+          seen[ti] = true;
+          if (matchTeamToSlot[ti] === -1 || tryAssign(matchTeamToSlot[ti], seen)) {
+            matchTeamToSlot[ti] = slotIdx;
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    for (let si = 0; si < slotList.length; si++) {
+      tryAssign(si, new Array(qualifiedThirds.length).fill(false));
+    }
+
+    for (let ti = 0; ti < qualifiedThirds.length; ti++) {
+      const si = matchTeamToSlot[ti];
+      if (si >= 0) resolved[slotList[si].slot] = qualifiedThirds[ti].team;
+    }
+  }
+
+  return resolved;
+}

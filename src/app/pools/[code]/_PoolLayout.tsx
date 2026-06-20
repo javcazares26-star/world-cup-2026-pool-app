@@ -150,18 +150,28 @@ export function PoolLayout({
       .on("postgres_changes", { event: "*", schema: "public", table: "picks", filter: `pool_id=eq.${pool.id}` }, updateLeaderboardAndNotify)
       .subscribe();
 
-    // Also listen to fixture score updates (when matches finish)
+    // Also listen to fixture updates (live scores AND final whistle).
+    // Points are only credited once a match reaches a finished status
+    // (FT/AET/PEN), and that transition often carries NO score change
+    // (e.g. 2-1 at the 90th → 2-1 final), so we must also refresh when the
+    // status flips to finished. Both group-stage and knockout matches count.
+    const FINISHED_STATUSES = ["FT", "AET", "PEN"];
     const fixturesCh = supabase
       .channel("fixture-leaderboard-updates")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "fixtures" }, (payload) => {
         const newFixture = payload.new as Fixture;
         const oldFixture = payload.old as Fixture;
 
-        // Only trigger leaderboard update if score changed (match finished)
-        if (
-          (newFixture.home_score !== oldFixture.home_score || newFixture.away_score !== oldFixture.away_score) &&
-          newFixture.group_label // Only group stage matches affect leaderboard
-        ) {
+        const scoreChanged =
+          newFixture.home_score !== oldFixture.home_score ||
+          newFixture.away_score !== oldFixture.away_score;
+        const justFinished =
+          FINISHED_STATUSES.includes(newFixture.status_short || "") &&
+          !FINISHED_STATUSES.includes(oldFixture.status_short || "");
+
+        // Refresh standings whenever the result changes or a match ends —
+        // for any match (group or knockout), since both award points.
+        if (scoreChanged || justFinished) {
           updateLeaderboardAndNotify();
         }
       })
