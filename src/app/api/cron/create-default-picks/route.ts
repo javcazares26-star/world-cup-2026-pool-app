@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, message: "No finished matches yet", created: 0 });
     }
 
-    const finishedFixtureIds = finishedMatches.map((m) => m.id);
+    const finishedFixtureIds = finishedMatches.map((m: { id: number }) => m.id);
 
     // Get all pools with members
     const { data: pools, error: poolError } = await supabase
