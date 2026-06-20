@@ -7,8 +7,9 @@ type Props = {
 };
 
 export function PotentialBracket({ fixtures }: Props) {
-  // Get current standings for all groups
-  const allGroupStandings = getAllGroupStandings(fixtures);
+  try {
+    // Get current standings for all groups
+    const allGroupStandings = getAllGroupStandings(fixtures);
 
   // Get the ranked 3rd place teams
   const all3rdPlace = getRanked3rdPlaceTeams(allGroupStandings);
@@ -139,5 +140,14 @@ export function PotentialBracket({ fixtures }: Props) {
         </div>
       </div>
     </div>
-  );
+  } catch (error) {
+    console.error("PotentialBracket error:", error);
+    return (
+      <div className="mb-6 card !p-4 border-l-4" style={{ borderLeftColor: "var(--crimson)" }}>
+        <div className="text-sm text-[var(--muted)]">
+          ⚠️ Potential bracket is loading. Check back in a moment.
+        </div>
+      </div>
+    );
+  }
 }

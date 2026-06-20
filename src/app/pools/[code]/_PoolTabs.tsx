@@ -13,6 +13,7 @@ import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { PotentialBracket } from "./_PotentialBracket";
 import { WinnerPick } from "./_WinnerPick";
 import { AdminPicks } from "./_AdminPicks";
+import { FixtureManager } from "./_FixtureManager";
 import type { Message } from "@/lib/types";
 
 export type { Member, OwnedPoolRef } from "./_Admin";
@@ -125,8 +126,9 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   // to avoid duplicate subscriptions to the same channel
 
   // ====== Group fixtures — separate by stage ======
-  const groupStageFixtures = useMemo(() => fixtures.filter(f => f.group_label), [fixtures]);
-  const eliminationFixtures = useMemo(() => fixtures.filter(f => !f.group_label), [fixtures]);
+  // Use BOTH group_label check AND is_knockout flag for accuracy
+  const groupStageFixtures = useMemo(() => fixtures.filter(f => f.group_label && !f.is_knockout), [fixtures]);
+  const eliminationFixtures = useMemo(() => fixtures.filter(f => f.is_knockout), [fixtures]);
 
   // ====== Get unique dates from group stage fixtures ======
   const uniqueDatesInGroups = useMemo(() => {
@@ -425,7 +427,14 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
       )}
 
       {tab === "admin" && isOwner && (
-        <Admin pool={pool} userId={userId} members={initialMembers} ownedPools={ownedPools} fixtures={fixtures} />
+        <div className="space-y-6">
+          <FixtureManager fixtures={fixtures} onFixturesUpdated={() => {
+            // Trigger a refetch or update of fixtures
+            window.location.reload();
+          }} />
+          <hr className="border-[var(--border)]" />
+          <Admin pool={pool} userId={userId} members={initialMembers} ownedPools={ownedPools} fixtures={fixtures} />
+        </div>
       )}
     </>
   );
