@@ -246,7 +246,33 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             </p>
           </div>
 
-            {/* UPCOMING MATCHES (grouped by day) — shown at top */}
+            {/* TODAY'S MATCHES — top of Picks: upcoming, live & finished (user's LOCAL day) */}
+            {(() => {
+              const now = new Date();
+              const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+              const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+              const todaysMatches = groupStageFixtures
+                .filter(f => {
+                  const k = new Date(f.kickoff_utc);
+                  return k >= todayStart && k < todayEnd;
+                })
+                .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
+              if (todaysMatches.length === 0) return null;
+              return (
+                <div className="card !p-0 overflow-hidden mb-6 border-2 border-[var(--gold)]">
+                  <div className="group-banner px-4 py-3 border-b-2 border-[var(--gold)] bg-[var(--gold)] bg-opacity-10 text-sm font-bold text-[var(--gold)]">
+                    🎯 TODAY'S MATCHES — Picks · Live · Results
+                  </div>
+                  <div className="space-y-0">
+                    {todaysMatches.map(m => (
+                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} isAdmin={isOwner} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* UPCOMING MATCHES (grouped by day) */}
             <UpcomingMatches fixtures={fixtures} picks={picks} onSave={upsertPick} userLocation={myLocation} isAdmin={isOwner} />
 
             {/* GROUPS STAGE SECTION */}
@@ -268,40 +294,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                 </select>
               )}
             </div>
-
-            {/* TODAY'S MATCHES - HIGHLIGHTED AT TOP */}
-            {(() => {
-              const now = new Date();
-              // Get today's date in UTC to match kickoff_utc
-              const utcYear = now.getUTCFullYear();
-              const utcMonth = now.getUTCMonth();
-              const utcDate = now.getUTCDate();
-              const todayStart = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0));
-              const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-
-              const todaysMatches = groupStageFixtures
-                .filter(f => {
-                  const kickoff = new Date(f.kickoff_utc);
-                  return kickoff >= todayStart && kickoff < todayEnd; // all of today: upcoming, live, finished
-                })
-                .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
-
-              if (todaysMatches.length > 0) {
-                return (
-                  <div className="card !p-0 overflow-hidden mb-6 border-2 border-[var(--gold)]">
-                    <div className="group-banner px-4 py-3 border-b-2 border-[var(--gold)] bg-[var(--gold)] bg-opacity-10 text-sm font-bold text-[var(--gold)]">
-                      🎯 TODAY'S MATCHES — Picks · Live · Results
-                    </div>
-                    <div className="space-y-0">
-                      {todaysMatches.map(m => (
-                        <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} userLocation={myLocation} isAdmin={isOwner} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            })()}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(groupedByStage.groups).map(([group, ms]) => {
