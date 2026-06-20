@@ -4,7 +4,7 @@ import { Toast } from "./Toast";
 
 export interface Notification {
   id: string;
-  type: "goal" | "leaderboard" | "info" | "success" | "warning";
+  type: "goal" | "leaderboard" | "info" | "success" | "warning" | "lock";
   title: string;
   message: string;
   duration?: number;

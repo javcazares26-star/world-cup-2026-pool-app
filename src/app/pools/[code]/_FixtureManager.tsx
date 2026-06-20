@@ -66,7 +66,7 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
     if (!edit) {
       if (field === "homeScore") return fixture.home_score ?? 0;
       if (field === "awayScore") return fixture.away_score ?? 0;
-      return fixture.status_short;
+      return fixture.status_short ?? "";
     }
 
     if (field === "homeScore") return edit.homeScore;
