@@ -61,17 +61,17 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
     });
   };
 
-  const getDisplayValue = (fixture: Fixture, field: keyof FixtureEdit) => {
+  const getDisplayValue = (fixture: Fixture, field: "homeScore" | "awayScore" | "status"): string | number => {
     const edit = edits[fixture.id];
     if (!edit) {
       if (field === "homeScore") return fixture.home_score ?? 0;
       if (field === "awayScore") return fixture.away_score ?? 0;
-      if (field === "status") return fixture.status_short;
+      return fixture.status_short;
     }
 
     if (field === "homeScore") return edit.homeScore;
     if (field === "awayScore") return edit.awayScore;
-    if (field === "status") return edit.status;
+    return edit.status;
   };
 
   const saveAllChanges = async () => {
@@ -163,9 +163,9 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
           <tbody>
             {filteredFixtures.map(fixture => {
               const isEdited = !!edits[fixture.id];
-              const homeScore = getDisplayValue(fixture, "homeScore") as number;
-              const awayScore = getDisplayValue(fixture, "awayScore") as number;
-              const status = getDisplayValue(fixture, "status") as string;
+              const homeScore = Number(getDisplayValue(fixture, "homeScore"));
+              const awayScore = Number(getDisplayValue(fixture, "awayScore"));
+              const status = String(getDisplayValue(fixture, "status"));
 
               return (
                 <tr
