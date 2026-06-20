@@ -282,7 +282,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               const todaysMatches = groupStageFixtures
                 .filter(f => {
                   const kickoff = new Date(f.kickoff_utc);
-                  return kickoff >= todayStart && kickoff < todayEnd && f.status_short === "NS";
+                  return kickoff >= todayStart && kickoff < todayEnd; // all of today: upcoming, live, finished
                 })
                 .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
 
@@ -290,7 +290,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                 return (
                   <div className="card !p-0 overflow-hidden mb-6 border-2 border-[var(--gold)]">
                     <div className="group-banner px-4 py-3 border-b-2 border-[var(--gold)] bg-[var(--gold)] bg-opacity-10 text-sm font-bold text-[var(--gold)]">
-                      🎯 TODAY'S MATCHES — Make Your Picks!
+                      🎯 TODAY'S MATCHES — Picks · Live · Results
                     </div>
                     <div className="space-y-0">
                       {todaysMatches.map(m => (
