@@ -46,7 +46,9 @@ export function WinnerPick({ pool, userId, fixtures }: Props) {
   const groupStageLockDeadline = useMemo(() => {
     // Find first knockout match to determine when group stage ends
     const knockoutFixtures = fixtures
-      .filter(f => f.is_knockout)
+      // Real seeded knockout rows only — ignore leftover duplicate API rows that
+      // were mislabeled is_knockout, which would otherwise place the lock in the past.
+      .filter(f => f.is_knockout && f.id < 1000000)
       .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
 
     if (knockoutFixtures.length > 0) {
