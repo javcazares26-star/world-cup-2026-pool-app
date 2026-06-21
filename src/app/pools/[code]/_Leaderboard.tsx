@@ -247,36 +247,37 @@ export function Leaderboard({
               const isFinal = finishedSet.has(f.status_short ?? "");
               const isLive = ["1H", "2H", "ET", "HT", "BT", "P", "LIVE"].includes(f.status_short ?? "");
               const hasScore = isFinal || isLive;
+              const borderColor = isFinal ? "var(--pitch-light)" : isLive ? "var(--crimson)" : "var(--border)";
               return (
-                <div key={f.id} className="p-3">
-                  <div className="flex items-center justify-between text-sm font-semibold mb-2">
+                <div key={f.id} className="p-3 border-l-4" style={{ borderLeftColor: borderColor }}>
+                  {/* status pill */}
+                  <div className="flex justify-center mb-1.5">
+                    {isFinal ? (
+                      <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--pitch-light)] text-[#0a1a14]">✓ Finished</span>
+                    ) : isLive ? (
+                      <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--crimson)] text-white">● {f.minute != null ? `${f.minute}' ` : ""}Live</span>
+                    ) : (
+                      <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--card-2)] text-[var(--muted)]">Upcoming</span>
+                    )}
+                  </div>
+                  {/* matchup */}
+                  <div className="flex items-center justify-between gap-2 text-sm font-semibold mb-2">
+                    <span className="flex items-center gap-1.5 flex-1 min-w-0 justify-end text-right">
+                      <span className="truncate">{f.home_team}</span> {getTeamFlag(f.home_team)}
+                    </span>
+                    <span className="shrink-0 font-bold px-2 py-0.5 rounded bg-[var(--card-2)] text-sm">
+                      {hasScore ? `${f.home_score ?? 0}-${f.away_score ?? 0}` : "vs"}
+                    </span>
                     <span className="flex items-center gap-1.5 flex-1 min-w-0">
-                      {getTeamFlag(f.home_team)} <span className="truncate">{f.home_team}</span>
-                    </span>
-                    <span className="flex flex-col items-center px-1">
-                      <span className="px-2 py-0.5 rounded bg-[var(--card-2)] text-xs">
-                        {hasScore ? `${f.home_score ?? 0} - ${f.away_score ?? 0}` : "vs"}
-                      </span>
-                      {isFinal ? (
-                        <span className="text-[9px] font-bold tracking-widest text-[var(--pitch-light)] mt-0.5">FT</span>
-                      ) : isLive ? (
-                        <span className="text-[9px] font-bold tracking-widest text-[var(--crimson)] mt-0.5">
-                          {f.minute != null ? `${f.minute}' ` : ""}LIVE
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="flex items-center justify-end gap-1.5 flex-1 min-w-0">
-                      <span className="truncate">{f.away_team}</span> {getTeamFlag(f.away_team)}
+                      {getTeamFlag(f.away_team)} <span className="truncate">{f.away_team}</span>
                     </span>
                   </div>
                   {!revealed ? (
-                    <p className="text-[11px] text-[var(--muted)] text-center py-1">
-                      🔒 Picks hidden until this match locks
-                    </p>
+                    <p className="text-[10px] text-[var(--muted)] text-center">🔒 Hidden until lock</p>
                   ) : matchPicks.length === 0 ? (
-                    <p className="text-[11px] text-[var(--muted)] text-center py-1">No picks made</p>
+                    <p className="text-[10px] text-[var(--muted)] text-center">No picks made</p>
                   ) : (
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1 justify-center">
                       {matchPicks.map(mp => {
                         const exact = isFinal && mp.home === f.home_score && mp.away === f.away_score;
                         const correct =
@@ -286,9 +287,9 @@ export function Leaderboard({
                           ? "bg-[var(--pitch-light)] text-[#0a1a14]"
                           : correct
                             ? "bg-[var(--gold)] text-[#2a2200]"
-                            : "bg-[var(--card-2)] text-[var(--text)]";
+                            : "bg-[var(--card-2)] text-[var(--muted)]";
                         return (
-                          <span key={mp.userId} className={"text-[11px] px-2 py-1 rounded-full " + cls}>
+                          <span key={mp.userId} className={"text-[10px] px-1.5 py-0.5 rounded " + cls} title={mp.name}>
                             {mp.name.split(" ")[0]} <strong>{mp.home}-{mp.away}</strong>
                           </span>
                         );
