@@ -63,6 +63,13 @@ const US_CITY_TIMEZONES: Record<string, string> = {
   "fl": "America/New_York",
   "phoenix": "America/Phoenix",
   "az": "America/Phoenix",
+  // Additional 2026 World Cup host venues
+  "atlanta": "America/New_York",
+  "boston": "America/New_York",
+  "foxborough": "America/New_York",
+  "philadelphia": "America/New_York",
+  "kansas city": "America/Chicago",
+  "east rutherford": "America/New_York",
 };
 
 // Mapping of common cities to country codes and timezones
@@ -88,28 +95,40 @@ const CITY_TIMEZONES: Record<string, { country: string; tz: string }> = {
 
 export function getTimezoneFromLocation(location: string): string | null {
   if (!location) return null;
+  return resolveTimezone(location);
+}
 
-  const lower = location.toLowerCase();
+/**
+ * Resolve a city/location string to an IANA timezone using precise matching.
+ * Avoids the substring bug where e.g. "dallas" matched "la" (Los Angeles)
+ * or "atlanta" matched "la". Matches whole multi-word phrases, then exact
+ * tokens (city names, then 2-letter state/country codes).
+ */
+function resolveTimezone(input: string): string | null {
+  const lower = input.toLowerCase().trim();
 
-  // Check exact city match first
-  if (CITY_TIMEZONES[lower]) {
-    return CITY_TIMEZONES[lower].tz;
+  // 1. Exact full-string match
+  if (CITY_TIMEZONES[lower]) return CITY_TIMEZONES[lower].tz;
+  if (US_CITY_TIMEZONES[lower]) return US_CITY_TIMEZONES[lower];
+
+  // 2. Multi-word phrase contained in the string (e.g. "new york/new jersey" → "new york")
+  for (const key of Object.keys(US_CITY_TIMEZONES)) {
+    if (key.includes(" ") && lower.includes(key)) return US_CITY_TIMEZONES[key];
+  }
+  for (const key of Object.keys(CITY_TIMEZONES)) {
+    if (key.includes(" ") && lower.includes(key)) return CITY_TIMEZONES[key].tz;
   }
 
-  // Check US cities/states
-  for (const [city, tz] of Object.entries(US_CITY_TIMEZONES)) {
-    if (lower.includes(city)) {
-      return tz;
-    }
+  // 3. Exact token matches — city names first, then state/country codes
+  const tokens = lower.split(/[\s,/•|]+/).filter(Boolean);
+  for (const t of tokens) {
+    if (US_CITY_TIMEZONES[t]) return US_CITY_TIMEZONES[t];
+    if (CITY_TIMEZONES[t]) return CITY_TIMEZONES[t].tz;
   }
-
-  // Check countries
-  for (const [country, tz] of Object.entries(COUNTRY_TIMEZONES)) {
-    if (lower.includes(country.toLowerCase())) {
-      return tz;
-    }
+  for (const t of tokens) {
+    const up = t.toUpperCase();
+    if (COUNTRY_TIMEZONES[up]) return COUNTRY_TIMEZONES[up];
   }
-
   return null;
 }
 
@@ -185,26 +204,5 @@ export function formatDualTime(
 
 function getTimezoneFromCity(city: string): string | null {
   if (!city) return null;
-  const lower = city.toLowerCase();
-
-  // Check exact city match first
-  if (CITY_TIMEZONES[lower]) {
-    return CITY_TIMEZONES[lower].tz;
-  }
-
-  // Check US cities/states
-  for (const [loc, tz] of Object.entries(US_CITY_TIMEZONES)) {
-    if (lower.includes(loc)) {
-      return tz;
-    }
-  }
-
-  // Fallback to country match
-  for (const [country, tz] of Object.entries(COUNTRY_TIMEZONES)) {
-    if (lower.includes(country.toLowerCase())) {
-      return tz;
-    }
-  }
-
-  return null;
+  return resolveTimezone(city);
 }
