@@ -243,10 +243,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
         <>
           <div className="card mb-4 border-l-4" style={{ borderLeftColor: "var(--crimson)" }}>
             <h3 className="font-bold text-sm flex items-center gap-2">
-              🔒 Pool rule — picks lock 5 minutes before kickoff
+              🔒 Pool rule — picks lock 1 hour before kickoff
             </h3>
             <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
-              Predictions can be updated freely until <strong>5 minutes before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. See your picks and live scores in the same place.
+              Predictions can be updated freely until <strong>1 hour before each match's kickoff time</strong>. Once locked, that match's pick is final — no changes, no exceptions. See your picks and live scores in the same place.
             </p>
           </div>
 

@@ -14,7 +14,7 @@ type Props = {
   isAdmin?: boolean;
 };
 
-const DEFAULT_LOCK_LEAD_MS = 2 * 60 * 60 * 1000; // picks lock 2 hours before kickoff
+const DEFAULT_LOCK_LEAD_MS = 1 * 60 * 60 * 1000; // picks lock 1 hour before kickoff
 const CANADA_BOSNIA_LOCK_MS = 30 * 60 * 1000; // Canada vs Bosnia: lock 30 mins before
 
 function getLockLeadMs(fixture: Fixture): number {

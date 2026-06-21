@@ -165,7 +165,7 @@ export async function GET(req: Request) {
     // Lock picks for any fixture within 2 hours of kickoff (or already past).
     // RLS also enforces this server-side, but flipping the locked column gives
     // the UI an authoritative flag without re-querying time.
-    const lockThresholdIso = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+    const lockThresholdIso = new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString();
     const { data: lockableFixtures } = await supabase
       .from("fixtures").select("id").lte("kickoff_utc", lockThresholdIso);
     const lockableIds = (lockableFixtures ?? []).map((r: any) => r.id);

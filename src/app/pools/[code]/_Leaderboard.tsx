@@ -168,7 +168,7 @@ export function Leaderboard({
   const hasStats = finishedFixtures.length > 0 && allPicks.length > 0;
 
   // ===== Today's matches + everyone's picks (revealed once a match locks) =====
-  const LOCK_LEAD_MS = 2 * 60 * 60 * 1000; // reveal picks once within lock window
+  const LOCK_LEAD_MS = 1 * 60 * 60 * 1000; // reveal picks once within lock window (1h before kickoff)
   const userName = useMemo(
     () => new Map(rows.map(r => [r.user_id, r.display_name] as const)),
     [rows]
@@ -245,19 +245,28 @@ export function Leaderboard({
           <div className="divide-y divide-[var(--border)]">
             {todaysPicks.map(({ fixture: f, revealed, matchPicks }) => {
               const isFinal = finishedSet.has(f.status_short ?? "");
+              const isLive = ["1H", "2H", "ET", "HT", "BT", "P", "LIVE"].includes(f.status_short ?? "");
+              const hasScore = isFinal || isLive;
               return (
                 <div key={f.id} className="p-3">
                   <div className="flex items-center justify-between text-sm font-semibold mb-2">
-                    <span className="flex items-center gap-1.5">
-                      {getTeamFlag(f.home_team)} {f.home_team}
+                    <span className="flex items-center gap-1.5 flex-1 min-w-0">
+                      {getTeamFlag(f.home_team)} <span className="truncate">{f.home_team}</span>
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-[var(--card-2)] text-xs">
-                      {isFinal || (f.status_short && f.status_short !== "NS")
-                        ? `${f.home_score ?? 0} - ${f.away_score ?? 0}`
-                        : "vs"}
+                    <span className="flex flex-col items-center px-1">
+                      <span className="px-2 py-0.5 rounded bg-[var(--card-2)] text-xs">
+                        {hasScore ? `${f.home_score ?? 0} - ${f.away_score ?? 0}` : "vs"}
+                      </span>
+                      {isFinal ? (
+                        <span className="text-[9px] font-bold tracking-widest text-[var(--pitch-light)] mt-0.5">FT</span>
+                      ) : isLive ? (
+                        <span className="text-[9px] font-bold tracking-widest text-[var(--crimson)] mt-0.5">
+                          {f.minute != null ? `${f.minute}' ` : ""}LIVE
+                        </span>
+                      ) : null}
                     </span>
-                    <span className="flex items-center gap-1.5">
-                      {f.away_team} {getTeamFlag(f.away_team)}
+                    <span className="flex items-center justify-end gap-1.5 flex-1 min-w-0">
+                      <span className="truncate">{f.away_team}</span> {getTeamFlag(f.away_team)}
                     </span>
                   </div>
                   {!revealed ? (
