@@ -179,6 +179,7 @@ export function Leaderboard({
     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
     const todays = fixtures
       .filter(f => {
+        if (f.id >= 1000000) return false; // skip leftover duplicate API-id rows; use seeded rows only
         const k = new Date(f.kickoff_utc);
         return k >= start && k < end;
       })
