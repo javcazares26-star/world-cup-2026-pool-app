@@ -274,17 +274,19 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
             {/* Show points earned */}
             {!editingScore && (
               <div className="mt-2 text-xs text-center">
-                {pick && (
-                  (() => {
-                    if (pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score) {
-                      return <span className="text-[var(--pitch-light)] font-bold">✅ Exact Match! +3 points</span>;
-                    }
-                    if (Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0))) {
-                      return <span className="text-[var(--gold)] font-bold">⭐ Correct Outcome! +1 point</span>;
-                    }
-                    return <span className="text-[var(--crimson)]">❌ No points</span>;
-                  })()
-                )}
+                {(() => {
+                  if (pick && pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score) {
+                    return <span className="text-[var(--pitch-light)] font-bold">✅ Exact Match! +3 points</span>;
+                  }
+                  if (pick && Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0))) {
+                    return <span className="text-[var(--gold)] font-bold">⭐ Correct Outcome! +1 point</span>;
+                  }
+                  return (
+                    <span className="text-[var(--crimson)]">
+                      ❌ No points{!pick ? " (no pick)" : ""}
+                    </span>
+                  );
+                })()}
               </div>
             )}
           </div>
