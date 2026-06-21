@@ -204,6 +204,36 @@ export function Leaderboard({
 
   const finishedSet = new Set(["FT", "AET", "PEN"]);
 
+  // ===== Potential standings: project CURRENT live-match scores as if final =====
+  const liveFixtures = useMemo(
+    () =>
+      fixtures.filter(
+        f =>
+          ["1H", "2H", "ET", "HT", "BT", "P", "LIVE"].includes(f.status_short ?? "") &&
+          f.home_score !== null &&
+          f.away_score !== null
+      ),
+    [fixtures]
+  );
+  const hasLive = liveFixtures.length > 0;
+  const potentialByUser = useMemo(() => {
+    const m = new Map<string, number>();
+    rows.forEach(r => m.set(r.user_id, r.points)); // start from current points
+    if (hasLive) {
+      const liveById = new Map(liveFixtures.map(f => [f.id, f] as const));
+      allPicks.forEach(p => {
+        const f = liveById.get(p.fixture_id);
+        if (f) m.set(p.user_id, (m.get(p.user_id) ?? 0) + pointsFor(p, f));
+      });
+    }
+    return m;
+  }, [rows, allPicks, liveFixtures, hasLive]);
+  const potentialRankOf = (userId: string) => {
+    const mine = potentialByUser.get(userId) ?? 0;
+    return visibleRows.filter(r => (potentialByUser.get(r.user_id) ?? 0) > mine).length + 1;
+  };
+  const colCount = hasLive ? 8 : 7;
+
   return (
     <div className="space-y-4">
       {/* Highlight strip */}
@@ -311,6 +341,7 @@ export function Leaderboard({
               <th className="text-left p-3">#</th>
               <th className="text-left p-3">Player</th>
               <th className="text-right p-3">Pts</th>
+              {hasLive && <th className="text-right p-3" title="Projected if live matches ended now">Potential</th>}
               <th className="text-right p-3 hidden sm:table-cell">Exact</th>
               <th className="text-right p-3 hidden sm:table-cell">Outcome</th>
               <th className="text-right p-3">🔥</th>
@@ -320,7 +351,7 @@ export function Leaderboard({
           <tbody>
             {visibleRows.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center text-[var(--muted)] p-6">
+                <td colSpan={colCount} className="text-center text-[var(--muted)] p-6">
                   No picks yet. Be the first!
                 </td>
               </tr>
@@ -363,6 +394,20 @@ export function Leaderboard({
                       </div>
                     </td>
                     <td className="p-3 text-right font-bold text-[var(--gold)]">{r.points}</td>
+                    {hasLive && (() => {
+                      const pot = potentialByUser.get(r.user_id) ?? r.points;
+                      const delta = rank - potentialRankOf(r.user_id); // + = moves up
+                      return (
+                        <td className="p-3 text-right">
+                          <span className="font-bold text-[var(--text)]">{pot}</span>
+                          {delta !== 0 && (
+                            <span className={"ml-1 text-[10px] font-bold " + (delta > 0 ? "text-[var(--pitch-light)]" : "text-[var(--crimson)]")}>
+                              {delta > 0 ? `▲${delta}` : `▼${Math.abs(delta)}`}
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })()}
                     <td className="p-3 text-right hidden sm:table-cell">
                       <span className="text-[var(--pitch-light)] font-semibold">{r.exact_count ?? 0}</span>
                       <span className="text-[10px] text-[var(--muted)] ml-1">×3</span>
@@ -382,7 +427,7 @@ export function Leaderboard({
                   </tr>
                   {isOpen && s && (
                     <tr className="border-t border-[var(--border)] bg-[var(--card-2)]">
-                      <td colSpan={7} className="p-4">
+                      <td colSpan={colCount} className="p-4">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                           <Stat label="Group pts" value={s.groupPoints} />
                           <Stat label="Knockout pts" value={s.koPoints} />
