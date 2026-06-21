@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Fixture, Pick, Pool, LeaderboardRow } from "@/lib/types";
 import { MatchRow } from "./_MatchRow";
-import { UpcomingMatches } from "./_UpcomingMatches";
 import { Leaderboard } from "./_Leaderboard";
 import { Kpis } from "./_Kpis";
 import { FairPlay } from "./_FairPlay";
@@ -43,6 +42,11 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   // Get current user's location for timezone display
   const myMember = initialMembers.find(m => m.user_id === userId);
   const myLocation = myMember?.location ?? null;
+
+  // Keep the leaderboard in sync with realtime refetches done in _PoolLayout
+  // (it refetches v_leaderboard whenever a fixture score changes or a match
+  // finishes, then passes the fresh rows down as the `leaderboard` prop).
+  useEffect(() => { setLeaderboard(initialLb); }, [initialLb]);
 
   // ====== ADMIN: Fetch all pool picks for search ======
   useEffect(() => {
@@ -271,9 +275,6 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                 </div>
               );
             })()}
-
-            {/* UPCOMING MATCHES (grouped by day) */}
-            <UpcomingMatches fixtures={fixtures} picks={picks} onSave={upsertPick} userLocation={myLocation} isAdmin={isOwner} />
 
             {/* GROUPS STAGE SECTION */}
             <div className="mb-6">

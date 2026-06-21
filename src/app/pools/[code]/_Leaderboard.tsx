@@ -1,6 +1,7 @@
 "use client";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getTeamFlag } from "@/lib/team-flags";
 import type { LeaderboardRow, Pool, Fixture, Pick } from "@/lib/types";
 
 type UserStats = {
@@ -166,6 +167,42 @@ export function Leaderboard({
 
   const hasStats = finishedFixtures.length > 0 && allPicks.length > 0;
 
+  // ===== Today's matches + everyone's picks (revealed once a match locks) =====
+  const LOCK_LEAD_MS = 2 * 60 * 60 * 1000; // reveal picks once within lock window
+  const userName = useMemo(
+    () => new Map(rows.map(r => [r.user_id, r.display_name] as const)),
+    [rows]
+  );
+  const todaysPicks = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    const todays = fixtures
+      .filter(f => {
+        const k = new Date(f.kickoff_utc);
+        return k >= start && k < end;
+      })
+      .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
+
+    return todays.map(f => {
+      const revealed =
+        (f.status_short != null && f.status_short !== "NS") ||
+        Date.now() >= new Date(f.kickoff_utc).getTime() - LOCK_LEAD_MS;
+      const matchPicks = allPicks
+        .filter(p => p.fixture_id === f.id)
+        .map(p => ({
+          userId: p.user_id,
+          name: userName.get(p.user_id) ?? "Player",
+          home: p.home_pick,
+          away: p.away_pick,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return { fixture: f, revealed, matchPicks };
+    });
+  }, [fixtures, allPicks, userName]);
+
+  const finishedSet = new Set(["FT", "AET", "PEN"]);
+
   return (
     <div className="space-y-4">
       {/* Highlight strip */}
@@ -194,6 +231,63 @@ export function Leaderboard({
               <div className="font-bold text-[var(--text)]">{highlights.exName}</div>
               <div className="text-xs text-[var(--gold)] font-semibold">{highlights.exVal} exact</div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Today's picks — what everyone predicted (revealed once a match locks) */}
+      {todaysPicks.length > 0 && (
+        <div className="card !p-0 overflow-hidden">
+          <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-sm font-bold text-[var(--gold)]">
+            👀 Today&apos;s Picks — what everyone predicted
+          </div>
+          <div className="divide-y divide-[var(--border)]">
+            {todaysPicks.map(({ fixture: f, revealed, matchPicks }) => {
+              const isFinal = finishedSet.has(f.status_short ?? "");
+              return (
+                <div key={f.id} className="p-3">
+                  <div className="flex items-center justify-between text-sm font-semibold mb-2">
+                    <span className="flex items-center gap-1.5">
+                      {getTeamFlag(f.home_team)} {f.home_team}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-[var(--card-2)] text-xs">
+                      {isFinal || (f.status_short && f.status_short !== "NS")
+                        ? `${f.home_score ?? 0} - ${f.away_score ?? 0}`
+                        : "vs"}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      {f.away_team} {getTeamFlag(f.away_team)}
+                    </span>
+                  </div>
+                  {!revealed ? (
+                    <p className="text-[11px] text-[var(--muted)] text-center py-1">
+                      🔒 Picks hidden until this match locks
+                    </p>
+                  ) : matchPicks.length === 0 ? (
+                    <p className="text-[11px] text-[var(--muted)] text-center py-1">No picks made</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {matchPicks.map(mp => {
+                        const exact = isFinal && mp.home === f.home_score && mp.away === f.away_score;
+                        const correct =
+                          isFinal && !exact &&
+                          Math.sign(mp.home - mp.away) === Math.sign((f.home_score ?? 0) - (f.away_score ?? 0));
+                        const cls = exact
+                          ? "bg-[var(--pitch-light)] text-[#0a1a14]"
+                          : correct
+                            ? "bg-[var(--gold)] text-[#2a2200]"
+                            : "bg-[var(--card-2)] text-[var(--text)]";
+                        return (
+                          <span key={mp.userId} className={"text-[11px] px-2 py-1 rounded-full " + cls}>
+                            {mp.name.split(" ")[0]} <strong>{mp.home}-{mp.away}</strong>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

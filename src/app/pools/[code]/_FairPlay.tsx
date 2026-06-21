@@ -27,7 +27,7 @@ export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick
   const { standingsByGroup, finishedCount, projectedCount } = useMemo(() => {
     const result: Record<string, Standing[]> = {};
     let finished = 0;
-    let projected = 0;
+    const projected = 0;
 
     // Initialize all teams in each group
     const teamsByGroup: Record<string, Set<string>> = {};
@@ -43,29 +43,15 @@ export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick
       }));
     });
 
-    // Index picks by fixture_id for quick lookup
-    const pickByFixture = new Map<number, Pick>();
-    picks.forEach(p => pickByFixture.set(p.fixture_id, p));
-
-    // Apply each group-stage fixture
+    // Apply each group-stage fixture — ONLY real finished results.
+    // Upcoming/unplayed matches are NOT counted (no projection from picks).
     fixtures.forEach(f => {
       if (!f.group_label) return;
       const isFinished = finishedStatuses.has(f.status_short ?? "");
-
-      let h: number | null = null;
-      let a: number | null = null;
-
-      if (isFinished && f.home_score !== null && f.away_score !== null) {
-        h = f.home_score; a = f.away_score;
-        finished++;
-      } else {
-        const pick = pickByFixture.get(f.id);
-        if (pick) {
-          h = pick.home_pick; a = pick.away_pick;
-          projected++;
-        }
-      }
-      if (h === null || a === null) return;  // unfinished + no pick → don't count
+      if (!isFinished || f.home_score === null || f.away_score === null) return;
+      const h = f.home_score;
+      const a = f.away_score;
+      finished++;
 
       const homeRow = result[f.group_label].find(r => r.team === f.home_team);
       const awayRow = result[f.group_label].find(r => r.team === f.away_team);
@@ -99,7 +85,6 @@ export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick
     );
   }
 
-  const totalCounted = finishedCount + projectedCount;
   const isMostlySimulation = projectedCount > finishedCount;
 
   // Show pre-tournament message and reset standings if tournament hasn't started
@@ -131,14 +116,14 @@ export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick
           ) : isMostlySimulation ? (
             <>Showing projected standings based on <strong>your picks</strong>. Once a match is finished, real scores replace your prediction in the calculation.</>
           ) : (
-            <>Standings calculated from real match results. Picks not yet played are filled in with your predictions.</>
+            <>Standings reflect <strong>only finished matches</strong>. Upcoming matches aren&apos;t counted until they&apos;re played.</>
           )}
         </p>
         <p className="text-[10px] text-[var(--muted)] mt-2 opacity-80">
           {!isTournamentStarted ? (
             `Tournament begins in ${daysUntilStart} day${daysUntilStart === 1 ? "" : "s"}. Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.`
           ) : (
-            `${finishedCount} finished match${finishedCount === 1 ? "" : "es"} · ${projectedCount} projected from your picks · Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.`
+            `${finishedCount} finished match${finishedCount === 1 ? "" : "es"} counted · Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.`
           )}
         </p>
       </div>
@@ -151,7 +136,7 @@ export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick
             <div key={group} className="card !p-0 overflow-hidden">
               <div className="px-4 py-3 border-b border-[var(--border)] flex items-center justify-between">
                 <h3 className="text-xs uppercase tracking-widest text-[var(--sky)]">{group}</h3>
-                {!anyCounted && <span className="text-[10px] text-[var(--muted)]">Make picks to see projected standings</span>}
+                {!anyCounted && <span className="text-[10px] text-[var(--muted)]">No finished matches yet</span>}
               </div>
               <table className="w-full text-sm">
                 <thead>
