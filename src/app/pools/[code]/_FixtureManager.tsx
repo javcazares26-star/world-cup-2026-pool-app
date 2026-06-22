@@ -13,7 +13,17 @@ type FixtureEdit = {
   homeScore: number;
   awayScore: number;
   status: string;
+  kickoff?: string; // datetime-local value (admin's local time); only set when edited
 };
+
+// Convert a stored UTC ISO string into a "YYYY-MM-DDTHH:mm" value for a
+// datetime-local input, expressed in the admin's local timezone.
+function toLocalInputValue(utcIso: string): string {
+  const d = new Date(utcIso);
+  if (isNaN(d.getTime())) return "";
+  const off = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - off).toISOString().slice(0, 16);
+}
 
 export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,6 +65,8 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
         current.awayScore = typeof value === "string" ? parseInt(value || "0", 10) : value;
       } else if (field === "status") {
         current.status = value as string;
+      } else if (field === "kickoff") {
+        current.kickoff = value as string;
       }
 
       return { ...prev, [fixtureId]: current };
@@ -92,6 +104,7 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
             home_score: edit.homeScore,
             away_score: edit.awayScore,
             status_short: edit.status,
+            ...(edit.kickoff ? { kickoff_utc: new Date(edit.kickoff).toISOString() } : {}),
           })
           .eq("id", edit.id)
       );
@@ -147,6 +160,10 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
           <option value="PEN">Penalties</option>
         </select>
       </div>
+
+      <p className="text-[11px] text-[var(--muted)]">
+        Tip: edit scores, status, or <strong>kickoff time</strong> (shown in your local time), then Save. Kickoff changes update the schedule for everyone.
+      </p>
 
       {/* Fixtures Table */}
       <div className="card !p-0 overflow-x-auto">
@@ -218,13 +235,14 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
                       <option value="PEN">PEN</option>
                     </select>
                   </td>
-                  <td className="p-3 text-xs text-[var(--muted)]">
-                    {new Date(fixture.kickoff_utc).toLocaleString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                  <td className="p-3 text-xs">
+                    <input
+                      type="datetime-local"
+                      value={edits[fixture.id]?.kickoff ?? toLocalInputValue(fixture.kickoff_utc)}
+                      onChange={(e) => updateFixture(fixture.id, "kickoff", e.target.value)}
+                      className="bg-[var(--bg)] border border-[var(--border)] rounded px-2 py-1 text-xs text-[var(--text)] hover:border-[var(--gold)] focus:border-[var(--gold)] outline-none"
+                      title="Set kickoff in your local time"
+                    />
                   </td>
                 </tr>
               );
