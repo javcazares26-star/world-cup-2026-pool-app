@@ -132,9 +132,15 @@ export function Leaderboard({
   // Filter out hidden admin
   const visibleRows = rows.filter((r) => !(r.user_id === pool.owner_id && pool.admin_hidden));
 
+  // Dense ranking: each distinct points total gets the next position, so ties
+  // share a place and the next score is the very next place
+  // (e.g. 33,33,32,31,31 → 1,1,2,3,3).
   const getProperRank = (index: number): number => {
     const currentPoints = visibleRows[index].points;
-    return visibleRows.filter((r) => r.points > currentPoints).length + 1;
+    const higherDistinct = new Set(
+      visibleRows.filter((r) => r.points > currentPoints).map((r) => r.points)
+    );
+    return higherDistinct.size + 1;
   };
 
   // Pool-wide highlights
@@ -372,13 +378,19 @@ export function Leaderboard({
               const isOpen = expanded === r.user_id;
               const rankClass =
                 rank === 1 ? "rank-gold" : rank === 2 ? "rank-silver" : rank === 3 ? "rank-bronze" : "bg-[var(--card-2)]";
+              // Podium row highlight for everyone in 1st/2nd/3rd (any number of ties)
+              const podiumBg =
+                rank === 1 ? "bg-[rgba(244,196,48,0.12)]"
+                : rank === 2 ? "bg-[rgba(148,163,184,0.14)]"
+                : rank === 3 ? "bg-[rgba(205,127,50,0.12)]"
+                : "";
               return (
                 <Fragment key={r.user_id}>
                   <tr
                     onClick={() => setExpanded(isOpen ? null : r.user_id)}
                     className={
                       "border-t border-[var(--border)] cursor-pointer hover:bg-[rgba(255,255,255,0.03)] " +
-                      (me ? "bg-[rgba(244,196,48,0.08)]" : "")
+                      (podiumBg || (me ? "bg-[rgba(244,196,48,0.08)]" : ""))
                     }
                   >
                     <td className="p-3">
