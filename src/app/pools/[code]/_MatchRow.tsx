@@ -79,6 +79,8 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
 
   const isLive = ["1H","2H","ET","LIVE","HT","BT","P"].includes(fixture.status_short ?? "");
   const isFinal = ["FT","AET","PEN"].includes(fixture.status_short ?? "");
+  // Match temporarily stopped (e.g. weather): SUSP = suspended, INT = interrupted
+  const isOnHold = ["SUSP","INT"].includes(fixture.status_short ?? "");
   const isLockedByTime = msUntilLock <= 0 && !isLive && !isFinal; // Don't lock if already live/final
   const locked = pick?.locked || (fixture.status_short && fixture.status_short !== "NS") || isLockedByTime;
 
@@ -125,7 +127,9 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
             </span>
           )}
         </div>
-        {isLive ? (
+        {isOnHold ? (
+          <span className="font-bold tracking-widest text-[var(--gold)]">⛈ ON HOLD</span>
+        ) : isLive ? (
           <span className="broadcast-live">{fixture.minute != null ? `${fixture.minute}'` : ""} LIVE</span>
         ) : isFinal ? (
           <span className="text-[var(--pitch-light)] font-bold tracking-widest">FT</span>
@@ -186,6 +190,26 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
               : <span className="text-lg">{getTeamFlag(fixture.away_team)}</span>}
           </div>
         </div>
+
+        {/* On-hold box: match temporarily suspended (e.g. weather) */}
+        {isOnHold && (
+          <div
+            className="rounded p-3 mt-2 border"
+            style={{
+              backgroundColor: "color-mix(in srgb, var(--gold) 14%, transparent)",
+              borderColor: "color-mix(in srgb, var(--gold) 50%, transparent)",
+            }}
+          >
+            <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--gold)] mb-1">
+              ⛈ On hold{fixture.minute != null ? ` · ${fixture.minute}'` : ""} — match suspended, play paused
+            </div>
+            <div className="flex justify-between items-center text-sm font-bold text-[var(--text)]">
+              <span>{fixture.home_team}</span>
+              <span className="px-3 py-1 bg-[var(--card-2)] rounded">{fixture.home_score ?? 0} - {fixture.away_score ?? 0}</span>
+              <span>{fixture.away_team}</span>
+            </div>
+          </div>
+        )}
 
         {/* Live score box for in-progress matches */}
         {isLive && (fixture.home_score !== null || fixture.away_score !== null) && (
@@ -293,7 +317,7 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
         )}
 
         {/* Real-time score display side-by-side with picks (non-live; live uses the box above) */}
-        {showScore && !isFinal && !isLive && (fixture.home_score !== null || fixture.away_score !== null) && (
+        {showScore && !isFinal && !isLive && !isOnHold && (fixture.home_score !== null || fixture.away_score !== null) && (
           <div className="flex justify-between items-center px-1 text-xs">
             <div className="text-[var(--muted)]">
               Your pick: <span className="font-bold text-white">{home} vs {away}</span>

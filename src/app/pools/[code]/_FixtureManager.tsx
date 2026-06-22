@@ -230,6 +230,8 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
                       <option value="NS">NS</option>
                       <option value="1H">1H</option>
                       <option value="2H">2H</option>
+                      <option value="SUSP">SUSP (on hold)</option>
+                      <option value="INT">INT (interrupted)</option>
                       <option value="FT">FT</option>
                       <option value="AET">AET</option>
                       <option value="PEN">PEN</option>
