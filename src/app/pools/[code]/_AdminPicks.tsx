@@ -14,9 +14,9 @@ type Props = {
   allPicks: any[]; // All picks from database, not just user's
 };
 
-export function AdminPicks({ fixtures, picks: userPicks, members, allPicks }: Props) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState<"name" | "team">("name");
+export function AdminPicks({ fixtures, picks: _userPicks, members, allPicks }: Props) {
+  const [nameQuery, setNameQuery] = useState("");
+  const [teamQuery, setTeamQuery] = useState("");
 
   // Index picks by user_id for quick lookup
   const picksByUser = useMemo(() => {
@@ -37,98 +37,87 @@ export function AdminPicks({ fixtures, picks: userPicks, members, allPicks }: Pr
     return map;
   }, [fixtures]);
 
-  // Filter members based on search
+  const nq = nameQuery.trim().toLowerCase();
+  const tq = teamQuery.trim().toLowerCase();
+
+  const fixtureHasTeam = (f: Fixture | undefined) =>
+    !!f && (f.home_team.toLowerCase().includes(tq) || f.away_team.toLowerCase().includes(tq));
+
+  // Members filtered by BOTH name (if given) and team (if given)
   const filteredMembers = useMemo(() => {
-    if (!searchQuery.trim()) return members;
-
-    const query = searchQuery.toLowerCase();
-
-    if (searchType === "name") {
-      return members.filter((m) =>
-        m.display_name.toLowerCase().includes(query)
-      );
-    }
-
-    // Search by team: find members who picked that team
     return members.filter((m) => {
-      const userPicks = picksByUser[m.user_id] || [];
-      return userPicks.some((pick) => {
-        const fixture = fixturesById[pick.fixture_id];
-        if (!fixture) return false;
-        return (
-          fixture.home_team.toLowerCase().includes(query) ||
-          fixture.away_team.toLowerCase().includes(query)
-        );
-      });
+      if (nq && !m.display_name.toLowerCase().includes(nq)) return false;
+      if (tq) {
+        const ps = picksByUser[m.user_id] || [];
+        const hasTeam = ps.some((pick) => fixtureHasTeam(fixturesById[pick.fixture_id]));
+        if (!hasTeam) return false;
+      }
+      return true;
     });
-  }, [members, searchQuery, searchType, picksByUser, fixturesById]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [members, nq, tq, picksByUser, fixturesById]);
 
   return (
     <div className="space-y-4">
       {/* Search Controls */}
       <div className="card">
-        <h2 className="font-bold text-lg mb-4">🔍 Search Participant Picks</h2>
+        <h2 className="font-bold text-lg mb-1">🔍 Search Participant Picks</h2>
+        <p className="text-xs text-[var(--muted)] mb-3">
+          Search by member, by team, or <strong>both together</strong> (e.g. a member&apos;s picks for one team).
+        </p>
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSearchType("name")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                searchType === "name"
-                  ? "bg-[var(--gold)] text-[#1a1a1a]"
-                  : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]"
-              }`}
-            >
-              👤 By Name
-            </button>
-            <button
-              onClick={() => setSearchType("team")}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                searchType === "team"
-                  ? "bg-[var(--gold)] text-[#1a1a1a]"
-                  : "bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]"
-              }`}
-            >
-              ⚽ By Team
-            </button>
-          </div>
           <input
             type="text"
-            placeholder={searchType === "name" ? "Search by name..." : "Search by team..."}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="👤 Member name…"
+            value={nameQuery}
+            onChange={(e) => setNameQuery(e.target.value)}
             className="flex-1 bg-[var(--bg-2)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-[var(--gold)]"
           />
+          <input
+            type="text"
+            placeholder="⚽ Team…"
+            value={teamQuery}
+            onChange={(e) => setTeamQuery(e.target.value)}
+            className="flex-1 bg-[var(--bg-2)] border border-[var(--border)] rounded-lg px-4 py-2 outline-none focus:border-[var(--gold)]"
+          />
+          {(nameQuery || teamQuery) && (
+            <button
+              onClick={() => { setNameQuery(""); setTeamQuery(""); }}
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-[var(--card-2)] text-[var(--muted)] hover:text-[var(--text)]"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
       {/* Results */}
       {filteredMembers.length === 0 ? (
         <div className="card text-center py-6 text-[var(--muted)]">
-          <p className="text-sm">No participants found matching "{searchQuery}"</p>
+          <p className="text-sm">No participants match this search.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filteredMembers.map((member) => {
             const memberPicks = picksByUser[member.user_id] || [];
-            const totalPicks = memberPicks.length;
-            const picksWithFixtures = memberPicks
-              .map((pick) => ({
-                pick,
-                fixture: fixturesById[pick.fixture_id],
-              }))
+            let picksWithFixtures = memberPicks
+              .map((pick) => ({ pick, fixture: fixturesById[pick.fixture_id] }))
               .filter((x) => x.fixture);
+
+            // When a team filter is active, narrow each member's picks to it
+            if (tq) picksWithFixtures = picksWithFixtures.filter((x) => fixtureHasTeam(x.fixture));
 
             return (
               <div key={member.user_id} className="card">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-bold text-base">{member.display_name}</h3>
                   <span className="text-xs bg-[var(--card-2)] px-2 py-1 rounded-full">
-                    {totalPicks} picks
+                    {picksWithFixtures.length}{tq ? ` of ${memberPicks.length}` : ""} picks
                   </span>
                 </div>
 
                 {picksWithFixtures.length === 0 ? (
-                  <p className="text-xs text-[var(--muted)]">No picks made yet</p>
+                  <p className="text-xs text-[var(--muted)]">No matching picks.</p>
                 ) : (
                   <div className="space-y-2">
                     {picksWithFixtures.map(({ pick, fixture }) => {
