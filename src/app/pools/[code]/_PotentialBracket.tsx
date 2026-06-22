@@ -1,6 +1,6 @@
 "use client";
 import type { Fixture, Pick } from "@/lib/types";
-import { resolveBracketSlots, isPlaceholder } from "@/lib/group-standings";
+import { resolveBracketSlots, isPlaceholder, getQualified3rdPlaceTeams } from "@/lib/group-standings";
 import { getTeamFlag } from "@/lib/team-flags";
 
 type Props = {
@@ -29,13 +29,38 @@ export function PotentialBracket({ fixtures, picks = [] }: Props) {
     ).length;
     const totalCount = groupFixtures.length;
 
+    // A slot is a 3rd-place placeholder if it starts with "3" (e.g. "3A", "3-ABCDF").
+    const slotOf = (realName: string, slotCode: string | null): string | null =>
+      slotCode || (isPlaceholder(realName) ? realName : null);
+    const isThirdSlot = (slot: string | null): boolean => !!slot && /^3/.test(slot.trim());
+
+    // Assign the qualified top-8 third-place teams (the SAME list, in the SAME
+    // order, as the 3rd Place Standings table) to the R32 third-place slots —
+    // each team exactly once, in match order. This keeps the bracket consistent
+    // with the standings and prevents a team appearing in two matches.
+    const qualThirds = getQualified3rdPlaceTeams(fixtures, picks).map((t) => t.team);
+    const thirdAssign: Record<string, string> = {}; // `${fixtureId}:home|away` -> team
+    let ti = 0;
+    for (const f of r32) {
+      if (isThirdSlot(slotOf(f.home_team, f.qualified_team_home)) && ti < qualThirds.length) {
+        thirdAssign[`${f.id}:home`] = qualThirds[ti++];
+      }
+      if (isThirdSlot(slotOf(f.away_team, f.qualified_team_away)) && ti < qualThirds.length) {
+        thirdAssign[`${f.id}:away`] = qualThirds[ti++];
+      }
+    }
+
     // Resolve one side of a fixture into { label, team }
-    const side = (realName: string, slotCode: string | null) => {
+    const side = (realName: string, slotCode: string | null, key: string) => {
       // If the real team is already determined, use it
       if (!isPlaceholder(realName)) {
         return { label: slotCode && slotCode !== realName ? slotCode : null, team: realName };
       }
       const slot = slotCode || realName;
+      // 3rd-place slots are assigned from the ordered qualified-thirds list above
+      if (isThirdSlot(slot)) {
+        return { label: slot, team: thirdAssign[key] ?? null };
+      }
       const team = resolved[(slot || "").toUpperCase()] || resolved[slot] || null;
       return { label: slot, team };
     };
@@ -52,8 +77,8 @@ export function PotentialBracket({ fixtures, picks = [] }: Props) {
     }
 
     const resolvedSlotCount = r32.reduce((n, f) => {
-      const h = side(f.home_team, f.qualified_team_home);
-      const a = side(f.away_team, f.qualified_team_away);
+      const h = side(f.home_team, f.qualified_team_home, `${f.id}:home`);
+      const a = side(f.away_team, f.qualified_team_away, `${f.id}:away`);
       return n + (h.team ? 1 : 0) + (a.team ? 1 : 0);
     }, 0);
 
@@ -77,8 +102,8 @@ export function PotentialBracket({ fixtures, picks = [] }: Props) {
 
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             {r32.map((f) => {
-              const h = side(f.home_team, f.qualified_team_home);
-              const a = side(f.away_team, f.qualified_team_away);
+              const h = side(f.home_team, f.qualified_team_home, `${f.id}:home`);
+              const a = side(f.away_team, f.qualified_team_away, `${f.id}:away`);
               const ready = !!h.team && !!a.team;
               const date = new Date(f.kickoff_utc).toLocaleDateString("en-US", {
                 month: "short",

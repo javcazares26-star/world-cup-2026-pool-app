@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { NotificationProvider } from "@/components/NotificationContext";
+import { ScrollButtons } from "@/components/ScrollButtons";
 
 export const metadata: Metadata = {
   title: "World Cup 2026 Pool",
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NotificationProvider>
           <div className="host-flag-strip" aria-hidden />
           {children}
+          <ScrollButtons />
         </NotificationProvider>
       </body>
     </html>

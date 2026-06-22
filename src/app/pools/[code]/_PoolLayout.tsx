@@ -233,7 +233,7 @@ export function PoolLayout({
       {header && <div className="flex-shrink-0">{header}</div>}
 
       {/* Main content area */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 max-w-5xl mx-auto w-full">
+      <div data-scroll-container className="flex-1 overflow-y-auto px-4 sm:px-6 max-w-5xl mx-auto w-full">
         <PoolTabs
           pool={pool}
           userId={userId}
