@@ -341,7 +341,14 @@ export function Leaderboard({
               <th className="text-left p-3">#</th>
               <th className="text-left p-3">Player</th>
               <th className="text-right p-3">Pts</th>
-              {hasLive && <th className="text-right p-3" title="Projected if live matches ended now">Potential</th>}
+              {hasLive && (
+                <th
+                  className="text-right p-3 whitespace-nowrap"
+                  title="If the live matches ended at their current scores: your projected points (current points + what YOUR picks for the live matches would earn) and how your rank would move (▲ up / ▼ down). If your live picks don't score, your points stay the same but your rank can still drop as others gain."
+                >
+                  Potential <span className="text-[var(--muted)] cursor-help">ⓘ</span>
+                </th>
+              )}
               <th className="text-right p-3 hidden sm:table-cell">Exact</th>
               <th className="text-right p-3 hidden sm:table-cell">Outcome</th>
               <th className="text-right p-3">🔥</th>
@@ -359,6 +366,8 @@ export function Leaderboard({
             {visibleRows.map((r, i) => {
               const me = r.user_id === meId;
               const rank = getProperRank(i);
+              const tiedCount = visibleRows.filter(x => x.points === r.points).length;
+              const isTied = tiedCount > 1;
               const s = statsByUser.get(r.user_id);
               const isOpen = expanded === r.user_id;
               const rankClass =
@@ -373,9 +382,17 @@ export function Leaderboard({
                     }
                   >
                     <td className="p-3">
-                      <span className={"inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold " + rankClass}>
-                        {rank}
-                      </span>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span
+                          className={"inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold " + rankClass}
+                          title={isTied ? `Tied for ${ordinal(rank)} with ${tiedCount - 1} other${tiedCount - 1 === 1 ? "" : "s"}` : ordinal(rank)}
+                        >
+                          {isTied ? `T${rank}` : rank}
+                        </span>
+                        {isTied && (
+                          <span className="text-[8px] font-bold uppercase tracking-wider text-[var(--muted)]">Tie</span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-2">
@@ -454,6 +471,12 @@ export function Leaderboard({
       </div>
     </div>
   );
+}
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]) + " place";
 }
 
 function Stat({ label, value, sub }: { label: string; value: number | string; sub?: string }) {
