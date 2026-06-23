@@ -141,6 +141,11 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
           <span className="text-xs">{formatDualTime(fixture.kickoff_utc, fixture.city, userLocation)}</span>
         )}
       </div>
+      {fixture.city && (
+        <div className="text-[10px] text-[var(--muted)] mb-1 flex items-center gap-1">
+          📍 {fixture.venue && fixture.venue !== fixture.city ? `${fixture.venue} · ${fixture.city}` : fixture.city}
+        </div>
+      )}
       {isKnockout && (fixture.qualified_team_home || fixture.qualified_team_away) && (
         <div className="text-[9px] text-[var(--muted)] mb-2 tracking-wide">
           {fixture.qualified_team_home ?? "?"} vs {fixture.qualified_team_away ?? "?"}
