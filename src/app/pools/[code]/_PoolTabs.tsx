@@ -10,7 +10,7 @@ import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { PotentialBracket } from "./_PotentialBracket";
-import { resolveR32Teams } from "@/lib/group-standings";
+import { projectKnockout } from "@/lib/bracket-projection";
 import { WinnerPick } from "./_WinnerPick";
 import { AdminPicks } from "./_AdminPicks";
 import { FixtureManager } from "./_FixtureManager";
@@ -133,8 +133,9 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   // Use BOTH group_label check AND is_knockout flag for accuracy
   const groupStageFixtures = useMemo(() => fixtures.filter(f => f.group_label && !f.is_knockout), [fixtures]);
   const eliminationFixtures = useMemo(() => fixtures.filter(f => f.is_knockout), [fixtures]);
-  // Projected Round-of-32 team names from current group positions (TBD until decided)
-  const koTeams = useMemo(() => resolveR32Teams(fixtures, picks), [fixtures, picks]);
+  // Projected knockout teams (R32 → Final): R32 from group positions, later
+  // rounds by advancing the higher-FIFA-ranked team (or the real winner once played).
+  const koTeams = useMemo(() => projectKnockout(fixtures, picks), [fixtures, picks]);
 
   // ====== Get unique dates from group stage fixtures ======
   const uniqueDatesInGroups = useMemo(() => {
