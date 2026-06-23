@@ -28,11 +28,15 @@ export function projectKnockout(
 
   const resolveSlot = (slot: string | null, realName: string): string | null => {
     if (!isPlaceholder(realName)) return realName; // already a real team
-    const s = (slot || realName || "").trim();
-    const w = s.match(/^W(\d+)$/i);
-    if (w) return winnerOf(parseInt(w[1], 10));
-    const l = s.match(/^L(\d+)$/i);
-    if (l) return loserOf(parseInt(l[1], 10));
+    // The Wnn/Lnn reference may live in either the qualified_team code or the
+    // team-name field, so check both.
+    for (const candidate of [slot, realName]) {
+      const s = (candidate || "").trim();
+      const w = s.match(/^W(\d+)$/i);
+      if (w) return winnerOf(parseInt(w[1], 10));
+      const l = s.match(/^L(\d+)$/i);
+      if (l) return loserOf(parseInt(l[1], 10));
+    }
     return null; // group-position slots only resolve via the R32 map
   };
 
