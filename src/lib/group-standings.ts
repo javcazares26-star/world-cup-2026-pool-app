@@ -310,3 +310,50 @@ export function resolveBracketSlots(
 
   return resolved;
 }
+
+/**
+ * Resolve the projected teams for each Round-of-32 fixture from current group
+ * positions: 1X/2X via standings, and the 8 qualifying 3rd-place teams assigned
+ * to the 3rd-place slots in match order (same list as the 3rd Place Standings).
+ * Returns a map: fixtureId -> { home, away } (null when not yet determinable).
+ */
+export function resolveR32Teams(
+  fixtures: Fixture[],
+  picks: Pick[]
+): Record<number, { home: string | null; away: string | null }> {
+  const resolved = resolveBracketSlots(fixtures, picks);
+  const r32 = fixtures
+    .filter((f) => f.is_knockout && (f.round || "").toLowerCase().includes("round of 32"))
+    .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
+
+  const slotOf = (realName: string, slotCode: string | null): string | null =>
+    slotCode || (isPlaceholder(realName) ? realName : null);
+  const isThird = (slot: string | null) => !!slot && /^3/.test(slot.trim());
+
+  const resolveNonThird = (realName: string, slotCode: string | null): string | null => {
+    if (!isPlaceholder(realName)) return realName; // already a real team
+    const slot = slotOf(realName, slotCode);
+    if (!slot || isThird(slot)) return null; // thirds handled separately below
+    return resolved[slot.toUpperCase()] ?? resolved[slot] ?? null;
+  };
+
+  const out: Record<number, { home: string | null; away: string | null }> = {};
+  for (const f of r32) {
+    out[f.id] = {
+      home: resolveNonThird(f.home_team, f.qualified_team_home),
+      away: resolveNonThird(f.away_team, f.qualified_team_away),
+    };
+  }
+
+  const qualThirds = getQualified3rdPlaceTeams(fixtures, picks).map((t) => t.team);
+  let ti = 0;
+  for (const f of r32) {
+    if (isThird(slotOf(f.home_team, f.qualified_team_home)) && ti < qualThirds.length) {
+      out[f.id].home = qualThirds[ti++];
+    }
+    if (isThird(slotOf(f.away_team, f.qualified_team_away)) && ti < qualThirds.length) {
+      out[f.id].away = qualThirds[ti++];
+    }
+  }
+  return out;
+}

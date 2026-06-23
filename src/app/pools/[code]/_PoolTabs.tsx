@@ -10,6 +10,7 @@ import { Admin, type Member, type OwnedPoolRef } from "./_Admin";
 import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { PotentialBracket } from "./_PotentialBracket";
+import { resolveR32Teams } from "@/lib/group-standings";
 import { WinnerPick } from "./_WinnerPick";
 import { AdminPicks } from "./_AdminPicks";
 import { FixtureManager } from "./_FixtureManager";
@@ -132,6 +133,8 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   // Use BOTH group_label check AND is_knockout flag for accuracy
   const groupStageFixtures = useMemo(() => fixtures.filter(f => f.group_label && !f.is_knockout), [fixtures]);
   const eliminationFixtures = useMemo(() => fixtures.filter(f => f.is_knockout), [fixtures]);
+  // Projected Round-of-32 team names from current group positions (TBD until decided)
+  const koTeams = useMemo(() => resolveR32Teams(fixtures, picks), [fixtures, picks]);
 
   // ====== Get unique dates from group stage fixtures ======
   const uniqueDatesInGroups = useMemo(() => {
@@ -276,6 +279,32 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               );
             })()}
 
+            {/* TOMORROW'S MATCHES — get your picks in early (user's LOCAL day) */}
+            {(() => {
+              const now = new Date();
+              const tomStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+              const tomEnd = new Date(tomStart.getTime() + 24 * 60 * 60 * 1000);
+              const tomorrowMatches = groupStageFixtures
+                .filter(f => {
+                  const k = new Date(f.kickoff_utc);
+                  return k >= tomStart && k < tomEnd;
+                })
+                .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
+              if (tomorrowMatches.length === 0) return null;
+              return (
+                <div className="card !p-0 overflow-hidden mb-6 border-2 border-[var(--border)]">
+                  <div className="group-banner px-4 py-3 border-b-2 border-[var(--border)] text-sm font-bold text-[var(--sky)]">
+                    📅 TOMORROW'S MATCHES — Make Your Picks Early
+                  </div>
+                  <div className="space-y-0">
+                    {tomorrowMatches.map(m => (
+                      <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} isAdmin={isOwner} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* GROUPS STAGE SECTION */}
             <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -363,9 +392,14 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                 </div>
                 <div className="space-y-0">
                   {ms.sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime())
-                    .map(m => (
-                    <MatchRow key={m.id} fixture={m} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} isAdmin={isOwner} />
-                  ))}
+                    .map(m => {
+                      // Show projected R32 teams (from current standings) instead of TBD
+                      const r = koTeams[m.id];
+                      const dm = r ? { ...m, home_team: r.home ?? m.home_team, away_team: r.away ?? m.away_team } : m;
+                      return (
+                        <MatchRow key={m.id} fixture={dm} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} isAdmin={isOwner} />
+                      );
+                    })}
                 </div>
               </div>
             ))}
