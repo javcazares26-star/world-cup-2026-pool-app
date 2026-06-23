@@ -14,6 +14,7 @@ import { projectKnockout } from "@/lib/bracket-projection";
 import { WinnerPick } from "./_WinnerPick";
 import { AdminPicks } from "./_AdminPicks";
 import { FixtureManager } from "./_FixtureManager";
+import { Billboard } from "./_Billboard";
 import type { Message } from "@/lib/types";
 
 export type { Member, OwnedPoolRef } from "./_Admin";
@@ -227,6 +228,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           ["fairplay", "📊 Groups Live"],
           ["members", "👥 Members"],
           ["leaderboard", "🥇 Leaderboard"],
+          ["billboard", "📢 Billboard"],
           ...(isOwner ? [["admin-picks", "🔍 All Picks"], ["admin", "⚙️ Admin"]] : []),
         ] as [string, string][]).map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)}
@@ -419,6 +421,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
 
       {tab === "members" && (
         <Members userId={userId} members={initialMembers} pool={{ ...pool, admin_hidden: poolAdminHidden }} />
+      )}
+
+      {tab === "billboard" && (
+        <Billboard pool={pool} userId={userId} members={initialMembers} />
       )}
 
       {tab === "leaderboard" && (
