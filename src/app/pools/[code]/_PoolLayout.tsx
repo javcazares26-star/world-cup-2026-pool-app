@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import type { Fixture, Pick, Pool, LeaderboardRow, Message } from "@/lib/types";
 import { PoolTabs, type Member, type OwnedPoolRef } from "./_PoolTabs";
+import { BillboardWidget } from "./_BillboardWidget";
 import { useNotification } from "@/components/NotificationContext";
 import { createClient } from "@/lib/supabase/client";
 
@@ -246,6 +247,9 @@ export function PoolLayout({
           initialTab={initialTab}
         />
       </div>
+
+      {/* Floating Billboard — available on every tab */}
+      <BillboardWidget pool={pool} userId={userId} members={members} />
     </div>
   );
 }

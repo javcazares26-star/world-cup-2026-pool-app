@@ -6,7 +6,7 @@ import type { Pool } from "@/lib/types";
 type Member = { user_id: string; display_name: string; avatar_url?: string | null };
 type Post = { id: string; pool_id: string; user_id: string; content: string; created_at: string };
 
-export function Billboard({ pool, userId, members }: { pool: Pool; userId: string; members: Member[] }) {
+export function Billboard({ pool, userId, members, embedded }: { pool: Pool; userId: string; members: Member[]; embedded?: boolean }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -67,8 +67,12 @@ export function Billboard({ pool, userId, members }: { pool: Pool; userId: strin
   return (
     <div className="space-y-4">
       <div className="card">
-        <h2 className="font-bold text-lg mb-1">📢 Billboard</h2>
-        <p className="text-xs text-[var(--muted)] mb-3">Post a message for everyone in the pool. Updates live.</p>
+        {!embedded && (
+          <>
+            <h2 className="font-bold text-lg mb-1">📢 Billboard</h2>
+            <p className="text-xs text-[var(--muted)] mb-3">Post a message for everyone in the pool. Updates live.</p>
+          </>
+        )}
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
