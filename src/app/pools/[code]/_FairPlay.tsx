@@ -17,6 +17,8 @@ type Standing = {
 
 export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick[] }) {
   const finishedStatuses = new Set(["FT", "AET", "PEN"]);
+  // Live matches count provisionally so positions move in real time
+  const liveStatuses = new Set(["1H", "2H", "ET", "HT", "BT", "P", "LIVE"]);
 
   // Tournament starts June 11, 2026
   const TOURNAMENT_START = new Date("2026-06-11T00:00:00Z");
@@ -43,12 +45,13 @@ export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick
       }));
     });
 
-    // Apply each group-stage fixture — ONLY real finished results.
+    // Apply each group-stage fixture — real results only (finished + live).
     // Upcoming/unplayed matches are NOT counted (no projection from picks).
     fixtures.forEach(f => {
       if (!f.group_label) return;
-      const isFinished = finishedStatuses.has(f.status_short ?? "");
-      if (!isFinished || f.home_score === null || f.away_score === null) return;
+      const status = f.status_short ?? "";
+      const counts = finishedStatuses.has(status) || liveStatuses.has(status);
+      if (!counts || f.home_score === null || f.away_score === null) return;
       const h = f.home_score;
       const a = f.away_score;
       finished++;
@@ -116,14 +119,14 @@ export function FairPlay({ fixtures, picks }: { fixtures: Fixture[]; picks: Pick
           ) : isMostlySimulation ? (
             <>Showing projected standings based on <strong>your picks</strong>. Once a match is finished, real scores replace your prediction in the calculation.</>
           ) : (
-            <>Standings reflect <strong>only finished matches</strong>. Upcoming matches aren&apos;t counted until they&apos;re played.</>
+            <>Standings update in <strong>real time</strong> from finished and in-progress matches. Upcoming matches aren&apos;t counted until they kick off.</>
           )}
         </p>
         <p className="text-[10px] text-[var(--muted)] mt-2 opacity-80">
           {!isTournamentStarted ? (
             `Tournament begins in ${daysUntilStart} day${daysUntilStart === 1 ? "" : "s"}. Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.`
           ) : (
-            `${finishedCount} finished match${finishedCount === 1 ? "" : "es"} counted · Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.`
+            `${finishedCount} match${finishedCount === 1 ? "" : "es"} counted (finished + live) · Top 2 in each group + 8 best 3rd-place teams advance to Round of 32.`
           )}
         </p>
       </div>
