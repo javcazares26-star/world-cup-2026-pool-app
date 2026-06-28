@@ -2,6 +2,8 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getTeamFlag } from "@/lib/team-flags";
+import { projectKnockout } from "@/lib/bracket-projection";
+import { isPlaceholder } from "@/lib/group-standings";
 import type { LeaderboardRow, Pool, Fixture, Pick } from "@/lib/types";
 
 type UserStats = {
@@ -210,6 +212,15 @@ export function Leaderboard({
 
   const finishedSet = new Set(["FT", "AET", "PEN"]);
 
+  // Resolve projected/real teams for knockout fixtures (group/standings based)
+  const koTeams = useMemo(() => projectKnockout(fixtures, []), [fixtures]);
+  const teamName = (f: Fixture, side: "home" | "away"): string => {
+    const raw = side === "home" ? f.home_team : f.away_team;
+    if (!isPlaceholder(raw)) return raw;
+    const resolved = koTeams[f.id]?.[side];
+    return resolved ?? raw;
+  };
+
   // ===== Potential standings: project CURRENT live-match scores as if final =====
   const liveFixtures = useMemo(
     () =>
@@ -299,13 +310,13 @@ export function Leaderboard({
                   {/* matchup */}
                   <div className="flex items-center justify-between gap-2 text-sm font-semibold mb-2">
                     <span className="flex items-center gap-1.5 flex-1 min-w-0 justify-end text-right">
-                      <span className="truncate">{f.home_team}</span> {getTeamFlag(f.home_team)}
+                      <span className="truncate">{teamName(f, "home")}</span> {getTeamFlag(teamName(f, "home"))}
                     </span>
                     <span className="shrink-0 font-bold px-2 py-0.5 rounded bg-[var(--card-2)] text-sm">
                       {hasScore ? `${f.home_score ?? 0}-${f.away_score ?? 0}` : "vs"}
                     </span>
                     <span className="flex items-center gap-1.5 flex-1 min-w-0">
-                      {getTeamFlag(f.away_team)} <span className="truncate">{f.away_team}</span>
+                      {getTeamFlag(teamName(f, "away"))} <span className="truncate">{teamName(f, "away")}</span>
                     </span>
                   </div>
                   {!revealed ? (

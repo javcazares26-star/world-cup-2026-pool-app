@@ -133,6 +133,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
   // Use BOTH group_label check AND is_knockout flag for accuracy
   const groupStageFixtures = useMemo(() => fixtures.filter(f => f.group_label && !f.is_knockout), [fixtures]);
   const eliminationFixtures = useMemo(() => fixtures.filter(f => f.is_knockout), [fixtures]);
+  const groupStageComplete = useMemo(
+    () => groupStageFixtures.length > 0 && groupStageFixtures.every(f => ["FT", "AET", "PEN"].includes(f.status_short ?? "")),
+    [groupStageFixtures]
+  );
   // Projected knockout teams (R32 → Final): R32 from group positions, later
   // rounds by advancing the higher-FIFA-ranked team (or the real winner once played).
   const koTeams = useMemo(() => projectKnockout(fixtures, picks), [fixtures, picks]);
@@ -370,13 +374,15 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             ⚔️ Knockout Stage
           </h2>
 
-          {/* Potential Bracket based on current group standings */}
-          <PotentialBracket fixtures={fixtures} picks={picks} />
-
-          {/* 3rd Place Standings */}
-          <div className="mb-6">
-            <ThirdPlaceStandings fixtures={fixtures} picks={picks} />
-          </div>
+          {/* Projected R32 + 3rd-place standings — only while the group stage is still ongoing */}
+          {!groupStageComplete && (
+            <>
+              <PotentialBracket fixtures={fixtures} picks={picks} />
+              <div className="mb-6">
+                <ThirdPlaceStandings fixtures={fixtures} picks={picks} />
+              </div>
+            </>
+          )}
 
           <div className="space-y-4">
             {Object.entries(groupedByStage.elim)
