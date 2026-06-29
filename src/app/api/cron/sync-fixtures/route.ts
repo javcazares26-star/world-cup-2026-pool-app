@@ -12,6 +12,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { fetchAllFixtures, fetchLiveFixtures } from "@/lib/api-football";
+import { projectKnockout } from "@/lib/bracket-projection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -130,22 +131,33 @@ export async function GET(req: Request) {
       .select("*")
       .lt("id", 1000000); // seeded rows are 900001-900104; API rows are >= 1,000,000
 
-    const seedByPair = new Map<string, any>();
+    // Resolve knockout fixtures' DETERMINED teams (R32 from finished groups,
+    // later rounds only when their feeder matches are actually finished — no
+    // rank guessing). This lets us match live knockout matches by real teams.
+    const koDetermined = projectKnockout(seedRows ?? [], [], { determinedOnly: true });
+
+    const seedByPair = new Map<string, { row: any; homeName: string }>();
     for (const r of seedRows ?? []) {
-      if (r.is_knockout) continue; // only group-stage rows have real team names
-      seedByPair.set(pairKey(r.home_team, r.away_team), r);
+      if (r.is_knockout) {
+        const res = koDetermined[r.id];
+        if (res?.home && res?.away) {
+          seedByPair.set(pairKey(res.home, res.away), { row: r, homeName: res.home });
+        }
+      } else {
+        seedByPair.set(pairKey(r.home_team, r.away_team), { row: r, homeName: r.home_team });
+      }
     }
 
     const updates: any[] = [];
     const unmatched: string[] = [];
     const nowIso = new Date().toISOString();
     for (const f of upserted) {
-      const row = seedByPair.get(pairKey(f.home_team, f.away_team));
-      if (!row) { unmatched.push(`${f.home_team} vs ${f.away_team}`); continue; }
-      // Orient API scores to the seeded row's home/away order
-      const sameOrientation = canonTeam(row.home_team) === canonTeam(f.home_team);
+      const entry = seedByPair.get(pairKey(f.home_team, f.away_team));
+      if (!entry) { unmatched.push(`${f.home_team} vs ${f.away_team}`); continue; }
+      // Orient API scores to the seeded row's (resolved) home/away order
+      const sameOrientation = canonTeam(entry.homeName) === canonTeam(f.home_team);
       updates.push({
-        ...row,
+        ...entry.row,
         home_score: sameOrientation ? f.home_score : f.away_score,
         away_score: sameOrientation ? f.away_score : f.home_score,
         status: f.status,

@@ -13,8 +13,10 @@ const FINISHED = ["FT", "AET", "PEN"];
 
 export function projectKnockout(
   fixtures: Fixture[],
-  picks: Pick[]
+  picks: Pick[],
+  opts?: { determinedOnly?: boolean }
 ): Record<number, { home: string | null; away: string | null }> {
+  const determinedOnly = opts?.determinedOnly ?? false;
   const r32 = resolveR32Teams(fixtures, picks);
 
   // Index knockout fixtures by their FIFA match number (id - 900000)
@@ -78,6 +80,7 @@ export function projectKnockout(
         f && FINISHED.includes(f.status_short ?? "") &&
         f.home_score != null && f.away_score != null && f.home_score !== f.away_score;
       if (finished) win = (f!.home_score as number) > (f!.away_score as number) ? home : away;
+      else if (determinedOnly) win = null; // only certain results, no rank guessing
       else win = rankOf(home) <= rankOf(away) ? home : away; // favorite by ranking
     } else {
       win = home || away || null;
