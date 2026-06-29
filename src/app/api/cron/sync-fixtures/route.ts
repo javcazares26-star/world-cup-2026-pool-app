@@ -221,6 +221,7 @@ export async function GET(req: Request) {
             updates.push({
               ...seed,
               home_score: null, away_score: null,
+              home_penalty: null, away_penalty: null,
               status: "Not Started", status_short: "NS", minute: null,
               updated_at: nowIso,
             });
@@ -237,6 +238,7 @@ export async function GET(req: Request) {
             away_team: a.away_team, away_team_id: a.away_team_id, away_logo: a.away_logo,
           } : {}),
           home_score: a.home_score, away_score: a.away_score,
+          home_penalty: a.home_penalty ?? null, away_penalty: a.away_penalty ?? null,
           status: a.status, status_short: a.status_short, minute: a.minute,
           updated_at: nowIso,
         });
@@ -248,6 +250,8 @@ export async function GET(req: Request) {
           ...seed,
           home_score: sameOrientation ? a.home_score : a.away_score,
           away_score: sameOrientation ? a.away_score : a.home_score,
+          home_penalty: sameOrientation ? (a.home_penalty ?? null) : (a.away_penalty ?? null),
+          away_penalty: sameOrientation ? (a.away_penalty ?? null) : (a.home_penalty ?? null),
           status: a.status,
           status_short: a.status_short,
           minute: a.minute,

@@ -29,7 +29,10 @@ type AFFixture = {
     away: { id: number; name: string; logo: string };
   };
   goals: { home: number | null; away: number | null };
-  score: { fulltime: { home: number | null; away: number | null } };
+  score: {
+    fulltime: { home: number | null; away: number | null };
+    penalty: { home: number | null; away: number | null };
+  };
 };
 
 function deriveGroupLabel(round: string | null): string | null {
@@ -81,6 +84,8 @@ export function normalize(af: AFFixture): FixtureUpsert {
     away_logo: af.teams.away.logo,
     home_score: af.goals.home,
     away_score: af.goals.away,
+    home_penalty: af.score?.penalty?.home ?? null,
+    away_penalty: af.score?.penalty?.away ?? null,
     venue: af.fixture.venue.name,
     city: af.fixture.venue.city,
     match_id: null,

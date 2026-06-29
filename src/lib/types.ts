@@ -20,6 +20,10 @@ export type Fixture = {
   away_logo: string | null;
   home_score: number | null;
   away_score: number | null;
+  // Penalty-shootout score (only set when status_short = 'PEN'); used to decide
+  // the knockout winner for the "correct outcome" point.
+  home_penalty: number | null;
+  away_penalty: number | null;
   venue: string | null;
   city: string | null;
 };

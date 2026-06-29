@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import type { Fixture, Pick } from "@/lib/types";
+import { pickPoints } from "@/lib/scoring";
 
 type Member = {
   user_id: string;
@@ -122,9 +123,9 @@ export function AdminPicks({ fixtures, picks: _userPicks, members, allPicks }: P
                   <div className="space-y-2">
                     {picksWithFixtures.map(({ pick, fixture }) => {
                       const isFinished = ["FT", "AET", "PEN"].includes(fixture.status_short ?? "");
-                      const isExact = isFinished && pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score;
-                      const isOutcomeCorrect = isFinished &&
-                        Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0));
+                      const pts = pickPoints(pick.home_pick, pick.away_pick, fixture);
+                      const isExact = pts === 3;
+                      const isOutcomeCorrect = pts === 1;
 
                       return (
                         <div

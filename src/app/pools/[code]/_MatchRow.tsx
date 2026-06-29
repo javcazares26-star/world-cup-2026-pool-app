@@ -3,6 +3,7 @@ import type { Fixture, Pick } from "@/lib/types";
 import { useEffect, useState } from "react";
 import { formatDualTime } from "@/lib/timezones";
 import { getTeamFlag } from "@/lib/team-flags";
+import { pickPoints } from "@/lib/scoring";
 
 type Props = {
   fixture: Fixture;
@@ -94,13 +95,24 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
     setTimeout(() => setSaved(false), 800);
   }
 
-  // Compute points for this fixture (mirrors v_pick_scores)
+  // How the match was decided, for a small label next to the final score.
+  const decidedBy =
+    fixture.status_short === "AET" ? "a.e.t." :
+    fixture.status_short === "PEN" ? "pens" : null;
+  // For penalty games, show the shootout result if we have it (e.g. "4-3 pens").
+  const penLabel =
+    fixture.status_short === "PEN" && fixture.home_penalty != null && fixture.away_penalty != null
+      ? `${fixture.home_penalty}-${fixture.away_penalty} pens`
+      : decidedBy;
+
+  // Compute points for this fixture (mirrors v_pick_scores / lib/scoring)
   let pointsLabel: string | null = null;
   let pointsClass = "";
   if (isFinal && pick) {
-    if (pick.home_pick === fixture.home_score && pick.away_pick === fixture.away_score) {
+    const pts = pickPoints(pick.home_pick, pick.away_pick, fixture);
+    if (pts === 3) {
       pointsLabel = "+3 EXACT"; pointsClass = "bg-[var(--pitch-light)] text-[#0a1a14]";
-    } else if (Math.sign(pick.home_pick - pick.away_pick) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0))) {
+    } else if (pts === 1) {
       pointsLabel = "+1"; pointsClass = "bg-[var(--gold)] text-[#2a2200]";
     } else {
       pointsLabel = "0"; pointsClass = "bg-[var(--card-2)] text-[var(--muted)]";
@@ -291,7 +303,10 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
             ) : (
               <div className="flex justify-between items-center text-sm font-bold">
                 <span>{fixture.home_team}</span>
-                <span className="px-3 py-1 bg-[var(--card-2)] rounded">{fixture.home_score} - {fixture.away_score}</span>
+                <span className="flex flex-col items-center">
+                  <span className="px-3 py-1 bg-[var(--card-2)] rounded">{fixture.home_score} - {fixture.away_score}</span>
+                  {penLabel && <span className="text-[10px] font-semibold text-[var(--muted)] mt-0.5 uppercase tracking-wide">{penLabel}</span>}
+                </span>
                 <span>{fixture.away_team}</span>
               </div>
             )}
@@ -303,11 +318,13 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
                   const ph = pick?.home_pick ?? 0;
                   const pa = pick?.away_pick ?? 0;
                   const note = pick ? "" : " (default 0-0)";
-                  if (ph === fixture.home_score && pa === fixture.away_score) {
+                  const pts = pickPoints(ph, pa, fixture);
+                  if (pts === 3) {
                     return <span className="text-[var(--pitch-light)] font-bold">✅ Exact Match! +3 points{note}</span>;
                   }
-                  if (Math.sign(ph - pa) === Math.sign((fixture.home_score ?? 0) - (fixture.away_score ?? 0))) {
-                    return <span className="text-[var(--gold)] font-bold">⭐ Correct Outcome! +1 point{note}</span>;
+                  if (pts === 1) {
+                    const via = fixture.status_short === "PEN" ? " (penalty winner)" : "";
+                    return <span className="text-[var(--gold)] font-bold">⭐ Correct Outcome! +1 point{via}{note}</span>;
                   }
                   return <span className="text-[var(--crimson)]">❌ No points{note}</span>;
                 })()}

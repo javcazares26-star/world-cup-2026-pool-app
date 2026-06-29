@@ -5,6 +5,7 @@ import { getTeamFlag } from "@/lib/team-flags";
 import { projectKnockout } from "@/lib/bracket-projection";
 import { isPlaceholder } from "@/lib/group-standings";
 import type { LeaderboardRow, Pool, Fixture, Pick } from "@/lib/types";
+import { pickPoints, pickPointsProjected, scoreLine } from "@/lib/scoring";
 
 type UserStats = {
   groupPoints: number;
@@ -19,14 +20,6 @@ type UserStats = {
 };
 
 const FINISHED = ["FT", "AET", "PEN"];
-
-function pointsFor(p: Pick, f: Fixture): number {
-  if (f.home_score === null || f.away_score === null) return 0;
-  if (p.home_pick === f.home_score && p.away_pick === f.away_score) return 3;
-  const ps = Math.sign(p.home_pick - p.away_pick);
-  const as = Math.sign(f.home_score - f.away_score);
-  return ps === as ? 1 : 0;
-}
 
 export function Leaderboard({
   rows,
@@ -91,7 +84,7 @@ export function Leaderboard({
       for (const f of finishedFixtures) {
         const p = pickByFixture.get(f.id);
         if (!p) continue;
-        const pts = pointsFor(p, f);
+        const pts = pickPoints(p.home_pick, p.away_pick, f);
         played++;
         if (pts === 3) exact++;
         else if (pts === 1) outcome++;
@@ -240,7 +233,7 @@ export function Leaderboard({
       const liveById = new Map(liveFixtures.map(f => [f.id, f] as const));
       allPicks.forEach(p => {
         const f = liveById.get(p.fixture_id);
-        if (f) m.set(p.user_id, (m.get(p.user_id) ?? 0) + pointsFor(p, f));
+        if (f) m.set(p.user_id, (m.get(p.user_id) ?? 0) + pickPointsProjected(p.home_pick, p.away_pick, f));
       });
     }
     return m;
@@ -326,10 +319,11 @@ export function Leaderboard({
                   ) : (
                     <div className="flex flex-wrap gap-1 justify-center">
                       {matchPicks.map(mp => {
-                        const exact = isFinal && mp.home === f.home_score && mp.away === f.away_score;
-                        const correct =
-                          isFinal && !exact &&
-                          Math.sign(mp.home - mp.away) === Math.sign((f.home_score ?? 0) - (f.away_score ?? 0));
+                        const mpPts = isFinal
+                          ? scoreLine(mp.home, mp.away, f.home_score, f.away_score, f.status_short, f.home_penalty, f.away_penalty)
+                          : 0;
+                        const exact = mpPts === 3;
+                        const correct = mpPts === 1;
                         const cls = exact
                           ? "bg-[var(--pitch-light)] text-[#0a1a14]"
                           : correct

@@ -11,6 +11,7 @@ import { Members } from "./_Members";
 import { ThirdPlaceStandings } from "./_3rdPlaceStandings";
 import { PotentialBracket } from "./_PotentialBracket";
 import { projectKnockout } from "@/lib/bracket-projection";
+import { pickPoints } from "@/lib/scoring";
 import { WinnerPick } from "./_WinnerPick";
 import { AdminPicks } from "./_AdminPicks";
 import { FixtureManager } from "./_FixtureManager";
@@ -191,9 +192,10 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
     let points = 0, exact = 0;
     picks.forEach(p => {
       const f = fixtures.find(x => x.id === p.fixture_id);
-      if (!f || (f.status_short !== "FT" && f.status_short !== "AET" && f.status_short !== "PEN")) return;
-      if (p.home_pick === f.home_score && p.away_pick === f.away_score) { points += 3; exact++; }
-      else if (Math.sign(p.home_pick - p.away_pick) === Math.sign((f.home_score ?? 0) - (f.away_score ?? 0))) points += 1;
+      if (!f) return;
+      const pts = pickPoints(p.home_pick, p.away_pick, f);
+      points += pts;
+      if (pts === 3) exact++;
     });
     return { points, exact, picks: picks.length };
   }, [picks, fixtures]);
@@ -373,6 +375,22 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
           <h2 className="text-lg font-bold text-[var(--gold)] mb-4 flex items-center gap-2">
             ⚔️ Knockout Stage
           </h2>
+
+          {/* How knockout points are counted */}
+          <div className="card mb-4 border-l-4" style={{ borderLeftColor: "var(--gold)" }}>
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              🏆 How knockout points are counted
+            </h3>
+            <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+              Knockout matches are scored on the <strong>final result after extra time</strong> — if a game is tied
+              in regulation and decided in extra time, your pick is graded against the a.e.t. scoreline.
+            </p>
+            <ul className="text-xs text-[var(--muted)] mt-2 space-y-1 list-disc list-inside">
+              <li><strong className="text-[var(--pitch-light)]">+3 points</strong> — exact final score (including extra time).</li>
+              <li><strong className="text-[var(--gold)]">+1 point</strong> — correct winner. If a match goes to a <strong>penalty shootout</strong>, the shootout winner counts as the result, so picking the right side earns the outcome point.</li>
+              <li><strong>0 points</strong> — otherwise.</li>
+            </ul>
+          </div>
 
           {/* Projected R32 + 3rd-place standings — only while the group stage is still ongoing */}
           {!groupStageComplete && (
