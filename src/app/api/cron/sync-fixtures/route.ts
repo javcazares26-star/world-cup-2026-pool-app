@@ -12,7 +12,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { fetchAllFixtures, fetchLiveFixtures } from "@/lib/api-football";
-import { projectKnockout } from "@/lib/bracket-projection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +47,24 @@ function canonTeam(name: string): string {
 function pairKey(a: string, b: string): string {
   return [canonTeam(a), canonTeam(b)].sort().join("|");
 }
+
+/** Canonicalize a host-city string so seed and API spellings line up. */
+function canonCity(c: string | null): string {
+  return (c || "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/** Does this look like a real, determined team (vs a "1L"/"Winner 73"/"TBD" placeholder)? */
+function isRealTeam(n: string | null): boolean {
+  const s = (n || "").trim();
+  if (!s) return false;
+  if (/^(tbd|w\d|l\d|\d)/i.test(s)) return false;          // 1L, 3-EHIJK, W86, TBD…
+  if (/winner|loser|runner|group|placeholder/i.test(s)) return false;
+  return true;
+}
+
+const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -122,52 +139,97 @@ export async function GET(req: Request) {
       }
     }
 
-    // Match each API fixture to our seeded row by team-pair and update THAT
-    // row's score/status — never insert API-id duplicates. Knockout seed rows
-    // carry placeholder names (1A, 3-ABCDF) so they won't match until teams are
-    // determined; those are skipped here and handled via the bracket.
+    // Match each API fixture to our seeded row and update THAT row's
+    // score/status — never insert API-id duplicates.
+    //
+    //  • GROUP rows: matched by team-pair (names are fixed and known).
+    //  • KNOCKOUT rows: matched by HOST CITY + KICKOFF TIME, which are fixed in
+    //    the schedule regardless of who qualifies. We then copy the REAL teams,
+    //    score and status straight from the API. We deliberately do NOT match
+    //    knockout rows by guessed/projected teams — those are estimates and can
+    //    both pick the wrong opponent and collide with unrelated results,
+    //    stamping a stale "FT" onto a match that hasn't been played.
     const { data: seedRows } = await supabase
       .from("fixtures")
       .select("*")
       .lt("id", 1000000); // seeded rows are 900001-900104; API rows are >= 1,000,000
 
-    // Resolve knockout fixtures' DETERMINED teams (R32 from finished groups,
-    // later rounds only when their feeder matches are actually finished — no
-    // rank guessing). This lets us match live knockout matches by real teams.
-    const koDetermined = projectKnockout(seedRows ?? [], [], { determinedOnly: true });
+    // Split the API feed into group (by pair) and knockout (list) lookups.
+    const apiGroupByPair = new Map<string, any>();
+    const apiKnockout: any[] = [];
+    for (const f of upserted) {
+      if (f.is_knockout) apiKnockout.push(f);
+      else apiGroupByPair.set(pairKey(f.home_team, f.away_team), f);
+    }
 
-    const seedByPair = new Map<string, { row: any; homeName: string }>();
-    for (const r of seedRows ?? []) {
-      if (r.is_knockout) {
-        const res = koDetermined[r.id];
-        if (res?.home && res?.away) {
-          seedByPair.set(pairKey(res.home, res.away), { row: r, homeName: res.home });
-        }
-      } else {
-        seedByPair.set(pairKey(r.home_team, r.away_team), { row: r, homeName: r.home_team });
+    // Find the API knockout fixture for a seed row by city + nearest kickoff.
+    function matchKnockoutSeed(seed: any): any | null {
+      const sc = canonCity(seed.city);
+      if (!sc) return null;
+      const st = new Date(seed.kickoff_utc).getTime();
+      let best: any = null;
+      let bestDiff = Infinity;
+      for (const a of apiKnockout) {
+        if (canonCity(a.city) !== sc) continue;
+        const diff = Math.abs(new Date(a.kickoff_utc).getTime() - st);
+        if (diff < bestDiff) { bestDiff = diff; best = a; }
       }
+      // Require within 36h so a city that hosts multiple knockout games on
+      // different dates maps each seed row to the correct one.
+      return bestDiff <= 36 * 60 * 60 * 1000 ? best : null;
     }
 
     const updates: any[] = [];
     const unmatched: string[] = [];
     const nowIso = new Date().toISOString();
-    for (const f of upserted) {
-      const entry = seedByPair.get(pairKey(f.home_team, f.away_team));
-      if (!entry) { unmatched.push(`${f.home_team} vs ${f.away_team}`); continue; }
-      // Orient API scores to the seeded row's (resolved) home/away order
-      const sameOrientation = canonTeam(entry.homeName) === canonTeam(f.home_team);
-      updates.push({
-        ...entry.row,
-        home_score: sameOrientation ? f.home_score : f.away_score,
-        away_score: sameOrientation ? f.away_score : f.home_score,
-        status: f.status,
-        status_short: f.status_short,
-        minute: f.minute,
-        updated_at: nowIso,
-      });
+
+    for (const seed of seedRows ?? []) {
+      if (seed.is_knockout) {
+        const a = matchKnockoutSeed(seed);
+        if (!a) {
+          // No real API fixture for this slot yet. If the row is holding a
+          // stale "finished" status with no real backing, reset it so it stops
+          // showing as played / awarding default points.
+          if (FINISHED_STATUSES.includes(seed.status_short ?? "")) {
+            updates.push({
+              ...seed,
+              home_score: null, away_score: null,
+              status: "Not Started", status_short: "NS", minute: null,
+              updated_at: nowIso,
+            });
+          }
+          continue;
+        }
+        // Copy the real teams (only once they're actually determined — never
+        // overwrite a "1L"/"W86" slot with an API placeholder), plus score+status.
+        const teamsKnown = isRealTeam(a.home_team) && isRealTeam(a.away_team);
+        updates.push({
+          ...seed,
+          ...(teamsKnown ? {
+            home_team: a.home_team, home_team_id: a.home_team_id, home_logo: a.home_logo,
+            away_team: a.away_team, away_team_id: a.away_team_id, away_logo: a.away_logo,
+          } : {}),
+          home_score: a.home_score, away_score: a.away_score,
+          status: a.status, status_short: a.status_short, minute: a.minute,
+          updated_at: nowIso,
+        });
+      } else {
+        const a = apiGroupByPair.get(pairKey(seed.home_team, seed.away_team));
+        if (!a) { unmatched.push(`${seed.home_team} vs ${seed.away_team}`); continue; }
+        const sameOrientation = canonTeam(seed.home_team) === canonTeam(a.home_team);
+        updates.push({
+          ...seed,
+          home_score: sameOrientation ? a.home_score : a.away_score,
+          away_score: sameOrientation ? a.away_score : a.home_score,
+          status: a.status,
+          status_short: a.status_short,
+          minute: a.minute,
+          updated_at: nowIso,
+        });
+      }
     }
 
-    console.log(`[Sync Fixtures] api:${upserted.length} matched:${updates.length} unmatched:${unmatched.length}`, unmatched.slice(0, 10));
+    console.log(`[Sync Fixtures] api:${upserted.length} matched:${updates.length} unmatched(group):${unmatched.length}`, unmatched.slice(0, 10));
 
     if (updates.length) {
       const { error } = await supabase.from("fixtures").upsert(updates, { onConflict: "id" });
