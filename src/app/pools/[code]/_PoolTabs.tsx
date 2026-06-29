@@ -392,6 +392,16 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             </ul>
           </div>
 
+          {/* Pick lock rule */}
+          <div className="card mb-4 border-l-4" style={{ borderLeftColor: "var(--crimson)" }}>
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              🔒 Picks lock 5 minutes before kickoff
+            </h3>
+            <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+              You can update each knockout pick freely until <strong>5 minutes before that match&apos;s kickoff time</strong>. Once locked, the pick is final — no changes, no exceptions.
+            </p>
+          </div>
+
           {/* Projected R32 + 3rd-place standings — only while the group stage is still ongoing */}
           {!groupStageComplete && (
             <>
