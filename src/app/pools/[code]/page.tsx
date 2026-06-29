@@ -76,7 +76,7 @@ export default async function PoolPage({
     location: m.profiles?.location ?? null,
   }));
 
-  const tab = searchParams.tab ?? "picks";
+  const tab = searchParams.tab ?? "knockout";
 
   return (
     <PoolLayout
