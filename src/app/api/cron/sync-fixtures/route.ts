@@ -48,13 +48,6 @@ function pairKey(a: string, b: string): string {
   return [canonTeam(a), canonTeam(b)].sort().join("|");
 }
 
-/** Canonicalize a host-city string so seed and API spellings line up. */
-function canonCity(c: string | null): string {
-  return (c || "")
-    .normalize("NFD").replace(/[̀-ͯ]/g, "")
-    .toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
 /** Does this look like a real, determined team (vs a "1L"/"Winner 73"/"TBD" placeholder)? */
 function isRealTeam(n: string | null): boolean {
   const s = (n || "").trim();
@@ -65,6 +58,18 @@ function isRealTeam(n: string | null): boolean {
 }
 
 const FINISHED_STATUSES = ["FT", "AET", "PEN"];
+
+/** Collapse any round label to a canonical knockout round bucket. */
+function canonRound(r: string | null): string {
+  const s = (r || "").toLowerCase();
+  if (/32/.test(s)) return "R32";
+  if (/16/.test(s)) return "R16";
+  if (/quarter/.test(s)) return "QF";
+  if (/semi/.test(s)) return "SF";
+  if (/third|3rd|3r?d.?place/.test(s)) return "TP";
+  if (/final/.test(s)) return "F";
+  return "KO";
+}
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -167,21 +172,38 @@ export async function GET(req: Request) {
       else apiGroupByPair.set(pairKey(f.home_team, f.away_team), f);
     }
 
-    // Find the API knockout fixture for a seed row by city + nearest kickoff.
-    function matchKnockoutSeed(seed: any): any | null {
-      const sc = canonCity(seed.city);
-      if (!sc) return null;
-      const st = new Date(seed.kickoff_utc).getTime();
-      let best: any = null;
-      let bestDiff = Infinity;
-      for (const a of apiKnockout) {
-        if (canonCity(a.city) !== sc) continue;
-        const diff = Math.abs(new Date(a.kickoff_utc).getTime() - st);
-        if (diff < bestDiff) { bestDiff = diff; best = a; }
+    // Pair knockout seed rows to API knockout fixtures POSITIONALLY: within each
+    // round, sort both sides by kickoff and pair by index. The published
+    // schedule order is identical on both sides, so this is immune to city-name
+    // differences and to any uniform kickoff-time offset. (When a round's counts
+    // don't line up yet — e.g. later rounds the API hasn't scheduled — we fall
+    // back to nearest-kickoff matching for whatever rows we can.)
+    const ts = (x: any) => new Date(x.kickoff_utc).getTime();
+    const koPairing = new Map<number, any>();
+    {
+      const seedByRound: Record<string, any[]> = {};
+      for (const s of seedRows ?? []) {
+        if (s.is_knockout) (seedByRound[canonRound(s.round)] ??= []).push(s);
       }
-      // Require within 36h so a city that hosts multiple knockout games on
-      // different dates maps each seed row to the correct one.
-      return bestDiff <= 36 * 60 * 60 * 1000 ? best : null;
+      const apiByRound: Record<string, any[]> = {};
+      for (const a of apiKnockout) (apiByRound[canonRound(a.round)] ??= []).push(a);
+
+      for (const rnd of Object.keys(seedByRound)) {
+        const ss = seedByRound[rnd].slice().sort((a, b) => ts(a) - ts(b));
+        const aa = (apiByRound[rnd] ?? []).slice().sort((a, b) => ts(a) - ts(b));
+        if (aa.length && ss.length === aa.length) {
+          for (let i = 0; i < ss.length; i++) koPairing.set(ss[i].id, aa[i]);
+        } else {
+          for (const s of ss) {
+            let best: any = null, bestDiff = Infinity;
+            for (const a of aa) {
+              const d = Math.abs(ts(a) - ts(s));
+              if (d < bestDiff) { bestDiff = d; best = a; }
+            }
+            if (best && bestDiff <= 36 * 60 * 60 * 1000) koPairing.set(s.id, best);
+          }
+        }
+      }
     }
 
     const updates: any[] = [];
@@ -190,7 +212,7 @@ export async function GET(req: Request) {
 
     for (const seed of seedRows ?? []) {
       if (seed.is_knockout) {
-        const a = matchKnockoutSeed(seed);
+        const a = koPairing.get(seed.id) ?? null;
         if (!a) {
           // No real API fixture for this slot yet. If the row is holding a
           // stale "finished" status with no real backing, reset it so it stops
