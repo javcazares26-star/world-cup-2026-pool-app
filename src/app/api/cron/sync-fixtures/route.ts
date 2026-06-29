@@ -155,10 +155,15 @@ export async function GET(req: Request) {
       .lt("id", 1000000); // seeded rows are 900001-900104; API rows are >= 1,000,000
 
     // Split the API feed into group (by pair) and knockout (list) lookups.
+    // NOTE: the API's own is_knockout flag is unreliable (its group round
+    // reads "Group Stage - 1", which our label parser can't read), so we
+    // classify by the round string directly: anything not a "Group" round
+    // is a knockout match.
+    const apiIsKnockout = (f: any) => !/group/i.test(f.round ?? "");
     const apiGroupByPair = new Map<string, any>();
     const apiKnockout: any[] = [];
     for (const f of upserted) {
-      if (f.is_knockout) apiKnockout.push(f);
+      if (apiIsKnockout(f)) apiKnockout.push(f);
       else apiGroupByPair.set(pairKey(f.home_team, f.away_team), f);
     }
 
