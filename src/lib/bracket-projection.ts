@@ -10,6 +10,8 @@ import { resolveR32Teams, isPlaceholder } from "./group-standings";
 import { rankOf } from "./fifa-rankings";
 
 const FINISHED = ["FT", "AET", "PEN"];
+// In-play statuses — used to advance the current leader of a live match.
+const LIVE = ["1H", "2H", "ET", "BT", "P", "HT", "LIVE"];
 
 export function projectKnockout(
   fixtures: Fixture[],
@@ -76,12 +78,30 @@ export function projectKnockout(
     const { home, away } = teamsOf(num);
     let win: string | null;
     if (home && away) {
-      const finished =
+      const settled =
         f && FINISHED.includes(f.status_short ?? "") &&
+        f.home_score != null && f.away_score != null;
+      // Decisive in regulation / extra time (one side scored more).
+      const decisive = settled && f!.home_score !== f!.away_score;
+      // Level after extra time but decided on penalties → use the shootout score.
+      const onPens =
+        settled && !decisive && f!.status_short === "PEN" &&
+        f!.home_penalty != null && f!.away_penalty != null;
+      // Currently in play with a lead → advance the real-time leader.
+      const liveLeader =
+        f && LIVE.includes(f.status_short ?? "") &&
         f.home_score != null && f.away_score != null && f.home_score !== f.away_score;
-      if (finished) win = (f!.home_score as number) > (f!.away_score as number) ? home : away;
-      else if (determinedOnly) win = null; // only certain results, no rank guessing
-      else win = rankOf(home) <= rankOf(away) ? home : away; // favorite by ranking
+      if (decisive) {
+        win = (f!.home_score as number) > (f!.away_score as number) ? home : away;
+      } else if (onPens) {
+        win = (f!.home_penalty as number) > (f!.away_penalty as number) ? home : away;
+      } else if (determinedOnly) {
+        win = null; // only certain (finished) results — no live/rank guessing
+      } else if (liveLeader) {
+        win = (f!.home_score as number) > (f!.away_score as number) ? home : away;
+      } else {
+        win = rankOf(home) <= rankOf(away) ? home : away; // favorite by ranking
+      }
     } else {
       win = home || away || null;
     }
