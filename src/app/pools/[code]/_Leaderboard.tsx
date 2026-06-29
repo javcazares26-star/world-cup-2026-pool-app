@@ -176,7 +176,7 @@ export function Leaderboard({
   const hasStats = finishedFixtures.length > 0 && allPicks.length > 0;
 
   // ===== Today's matches + everyone's picks (revealed once a match locks) =====
-  const LOCK_LEAD_MS = 1 * 60 * 60 * 1000; // reveal picks once within lock window (1h before kickoff)
+  const LOCK_LEAD_MS = 5 * 60 * 1000; // reveal picks once within lock window (5 min before kickoff)
   const userName = useMemo(
     () => new Map(rows.map(r => [r.user_id, r.display_name] as const)),
     [rows]

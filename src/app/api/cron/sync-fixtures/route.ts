@@ -263,19 +263,27 @@ export async function GET(req: Request) {
       if (error) throw error;
     }
 
-    // Lock picks for any fixture within 2 hours of kickoff (or already past).
-    // RLS also enforces this server-side, but flipping the locked column gives
-    // the UI an authoritative flag without re-querying time.
-    const lockThresholdIso = new Date(Date.now() + 1 * 60 * 60 * 1000).toISOString();
-    const { data: lockableFixtures } = await supabase
-      .from("fixtures").select("id").lte("kickoff_utc", lockThresholdIso);
-    const lockableIds = (lockableFixtures ?? []).map((r: any) => r.id);
-    if (lockableIds.length) {
+    // Pick lock window: 5 minutes before kickoff. RLS also enforces this
+    // server-side, but flipping the `locked` column gives the UI an
+    // authoritative flag without re-querying time. We both LOCK fixtures that
+    // are now within 5 min of kickoff AND UNLOCK any still more than 5 min away
+    // (so a fixture that was locked under an earlier, wider window re-opens).
+    const lockCutoffIso = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    const { data: imminent } = await supabase
+      .from("fixtures").select("id").lte("kickoff_utc", lockCutoffIso);
+    const imminentIds = (imminent ?? []).map((r: any) => r.id);
+    if (imminentIds.length) {
       await supabase
-        .from("picks")
-        .update({ locked: true })
-        .eq("locked", false)
-        .in("fixture_id", lockableIds);
+        .from("picks").update({ locked: true })
+        .eq("locked", false).in("fixture_id", imminentIds);
+    }
+    const { data: notDue } = await supabase
+      .from("fixtures").select("id").gt("kickoff_utc", lockCutoffIso);
+    const notDueIds = (notDue ?? []).map((r: any) => r.id);
+    if (notDueIds.length) {
+      await supabase
+        .from("picks").update({ locked: false })
+        .eq("locked", true).in("fixture_id", notDueIds);
     }
 
     return NextResponse.json({

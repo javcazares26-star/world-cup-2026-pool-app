@@ -14,15 +14,10 @@ type Props = {
   isAdmin?: boolean;
 };
 
-const DEFAULT_LOCK_LEAD_MS = 1 * 60 * 60 * 1000; // picks lock 1 hour before kickoff
-const CANADA_BOSNIA_LOCK_MS = 30 * 60 * 1000; // Canada vs Bosnia: lock 30 mins before
+const DEFAULT_LOCK_LEAD_MS = 5 * 60 * 1000; // picks lock 5 minutes before kickoff
 
-function getLockLeadMs(fixture: Fixture): number {
-  // Special case: Canada vs Bosnia locks only 30 mins before
-  const isCanadaBosnia =
-    (fixture.home_team === 'Canada' && fixture.away_team?.includes('Bosnia')) ||
-    (fixture.away_team === 'Canada' && fixture.home_team?.includes('Bosnia'));
-  return isCanadaBosnia ? CANADA_BOSNIA_LOCK_MS : DEFAULT_LOCK_LEAD_MS;
+function getLockLeadMs(_fixture: Fixture): number {
+  return DEFAULT_LOCK_LEAD_MS;
 }
 
 export function MatchRow({ fixture, pick, showActual, showScore, userLocation, onSave, isAdmin }: Props) {
