@@ -228,7 +228,7 @@ export function isPlaceholder(code: string | null | undefined): boolean {
   if (!code) return true;
   if (code.toUpperCase() === "TBD") return true;
   if (isGroupSlot(code)) return true;
-  return /^[WL]\d+$/i.test(code);
+  return /^([WL]|RU)\d+$/i.test(code); // W## winner, L## loser, RU## runner-up
 }
 
 /**

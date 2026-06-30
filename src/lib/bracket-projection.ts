@@ -38,7 +38,9 @@ export function projectKnockout(
       const s = (candidate || "").trim();
       const w = s.match(/^W(\d+)$/i);
       if (w) return winnerOf(parseInt(w[1], 10));
-      const l = s.match(/^L(\d+)$/i);
+      // L## and RU## both mean the losing side of match ## (RU = runner-up,
+      // used for the third-place final, which is the two losing semifinalists).
+      const l = s.match(/^(?:L|RU)(\d+)$/i);
       if (l) return loserOf(parseInt(l[1], 10));
     }
     return null; // group-position slots only resolve via the R32 map

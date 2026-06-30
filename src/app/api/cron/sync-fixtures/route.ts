@@ -175,9 +175,16 @@ export async function GET(req: Request) {
     // Pair knockout seed rows to API knockout fixtures POSITIONALLY: within each
     // round, sort both sides by kickoff and pair by index. The published
     // schedule order is identical on both sides, so this is immune to city-name
-    // differences and to any uniform kickoff-time offset. (When a round's counts
-    // don't line up yet — e.g. later rounds the API hasn't scheduled — we fall
-    // back to nearest-kickoff matching for whatever rows we can.)
+    // differences and to any uniform kickoff-time offset.
+    //
+    // CRITICAL: we only pair a round when the API has a COMPLETE, REAL draw for
+    // it (same number of fixtures as our seed, and every team is a real country
+    // — not a "TBD"/"Winner …" placeholder). Until then the round's teams are
+    // not yet known, so we leave those seed rows untouched and let the bracket
+    // projection fill them from the R32 results. Without this guard, a partial
+    // or placeholder API round would get fuzzily mismatched and overwrite many
+    // seed rows with the wrong teams (e.g. every Round of 16 showing the same
+    // pairing).
     const ts = (x: any) => new Date(x.kickoff_utc).getTime();
     const koPairing = new Map<number, any>();
     {
@@ -191,18 +198,15 @@ export async function GET(req: Request) {
       for (const rnd of Object.keys(seedByRound)) {
         const ss = seedByRound[rnd].slice().sort((a, b) => ts(a) - ts(b));
         const aa = (apiByRound[rnd] ?? []).slice().sort((a, b) => ts(a) - ts(b));
-        if (aa.length && ss.length === aa.length) {
+        const distinctPairs = new Set(aa.map((a) => pairKey(a.home_team, a.away_team))).size;
+        const drawComplete =
+          aa.length === ss.length &&
+          aa.every((a) => isRealTeam(a.home_team) && isRealTeam(a.away_team)) &&
+          distinctPairs === aa.length; // a real, varied draw — not duplicates/placeholders
+        if (drawComplete) {
           for (let i = 0; i < ss.length; i++) koPairing.set(ss[i].id, aa[i]);
-        } else {
-          for (const s of ss) {
-            let best: any = null, bestDiff = Infinity;
-            for (const a of aa) {
-              const d = Math.abs(ts(a) - ts(s));
-              if (d < bestDiff) { bestDiff = d; best = a; }
-            }
-            if (best && bestDiff <= 36 * 60 * 60 * 1000) koPairing.set(s.id, best);
-          }
         }
+        // else: round not fully drawn yet — leave to the projection.
       }
     }
 
