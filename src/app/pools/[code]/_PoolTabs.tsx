@@ -386,7 +386,8 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
               in regulation and decided in extra time, your pick is graded against the a.e.t. scoreline.
             </p>
             <ul className="text-xs text-[var(--muted)] mt-2 space-y-1 list-disc list-inside">
-              <li><strong className="text-[var(--pitch-light)]">+3 points</strong> — exact final score (including extra time).</li>
+              <li><strong className="text-[var(--pitch-light)]">+3 points</strong> — exact final score in the Round of 32 (including extra time).</li>
+              <li><strong className="text-[var(--pitch-light)]">+6 points</strong> — exact final score from the <strong>Round of 16 through the Final</strong> (exact picks count double).</li>
               <li><strong className="text-[var(--gold)]">+1 point</strong> — correct winner. If a match goes to a <strong>penalty shootout</strong>, the shootout winner counts as the result, so picking the right side earns the outcome point.</li>
               <li><strong>0 points</strong> — otherwise.</li>
             </ul>
@@ -451,7 +452,18 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                 return (aIdx >= 0 ? aIdx : 999) - (bIdx >= 0 ? bIdx : 999);
               })
               .map(([round, ms]) => (
-              <div key={round} className="card !p-0 overflow-hidden">
+              <div key={round}>
+              {round === "Round of 16" && (
+                <div className="card mb-3 border-l-4" style={{ borderLeftColor: "var(--pitch-light)" }}>
+                  <h3 className="font-bold text-sm flex items-center gap-2">
+                    ✨ Double points start here
+                  </h3>
+                  <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+                    From the <strong>Round of 16 through the Final</strong>, an exact-score prediction is worth <strong className="text-[var(--pitch-light)]">6 points</strong> instead of 3. Correct-outcome picks still earn 1 point.
+                  </p>
+                </div>
+              )}
+              <div className="card !p-0 overflow-hidden">
                 <div className="group-banner px-4 py-3 border-b border-[var(--border)] text-xs text-[var(--gold)]">
                   {round}
                 </div>
@@ -466,6 +478,7 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
                       );
                     })}
                 </div>
+              </div>
               </div>
             ))}
             {eliminationFixtures.length === 0 && (

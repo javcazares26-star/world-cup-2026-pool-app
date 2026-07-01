@@ -13,6 +13,15 @@ import type { Fixture } from "./types";
 
 const FINISHED = ["FT", "AET", "PEN"];
 
+/**
+ * Exact-score value for a fixture. From the Round of 16 onward (every knockout
+ * round except the Round of 32) an exact score is worth DOUBLE — 6 points.
+ * Group stage and Round of 32 exact scores are worth 3.
+ */
+export function exactValueFor(f: Fixture): number {
+  return f.is_knockout && !/32/.test(f.round ?? "") ? 6 : 3;
+}
+
 export function isScored(f: Fixture): boolean {
   return (
     FINISHED.includes(f.status_short ?? "") &&
@@ -37,9 +46,10 @@ export function scoreLine(
   statusShort?: string | null,
   homePenalty?: number | null,
   awayPenalty?: number | null,
+  exactValue: number = 3,
 ): number {
   if (homeScore == null || awayScore == null) return 0;
-  if (homePick === homeScore && awayPick === awayScore) return 3; // exact (incl. a.e.t.)
+  if (homePick === homeScore && awayPick === awayScore) return exactValue; // exact (incl. a.e.t.)
   if (statusShort === "PEN") {
     // Decided on penalties: outcome point if the predicted side matches the
     // shootout winner. If penalty scores weren't captured, no outcome point.
@@ -54,10 +64,10 @@ export function scoreLine(
 /** Official points: only counts finished matches (FT/AET/PEN). */
 export function pickPoints(homePick: number, awayPick: number, f: Fixture): number {
   if (!isScored(f)) return 0;
-  return scoreLine(homePick, awayPick, f.home_score, f.away_score, f.status_short, f.home_penalty, f.away_penalty);
+  return scoreLine(homePick, awayPick, f.home_score, f.away_score, f.status_short, f.home_penalty, f.away_penalty, exactValueFor(f));
 }
 
 /** Projected points: scores whatever scoreline is present, finished or not. */
 export function pickPointsProjected(homePick: number, awayPick: number, f: Fixture): number {
-  return scoreLine(homePick, awayPick, f.home_score, f.away_score, f.status_short, f.home_penalty, f.away_penalty);
+  return scoreLine(homePick, awayPick, f.home_score, f.away_score, f.status_short, f.home_penalty, f.away_penalty, exactValueFor(f));
 }

@@ -5,7 +5,7 @@ import { getTeamFlag } from "@/lib/team-flags";
 import { projectKnockout } from "@/lib/bracket-projection";
 import { isPlaceholder } from "@/lib/group-standings";
 import type { LeaderboardRow, Pool, Fixture, Pick } from "@/lib/types";
-import { pickPoints, pickPointsProjected, scoreLine } from "@/lib/scoring";
+import { pickPoints, pickPointsProjected, scoreLine, exactValueFor } from "@/lib/scoring";
 
 type UserStats = {
   groupPoints: number;
@@ -320,9 +320,9 @@ export function Leaderboard({
                     <div className="flex flex-wrap gap-1 justify-center">
                       {matchPicks.map(mp => {
                         const mpPts = isFinal
-                          ? scoreLine(mp.home, mp.away, f.home_score, f.away_score, f.status_short, f.home_penalty, f.away_penalty)
+                          ? scoreLine(mp.home, mp.away, f.home_score, f.away_score, f.status_short, f.home_penalty, f.away_penalty, exactValueFor(f))
                           : 0;
-                        const exact = mpPts === 3;
+                        const exact = mpPts >= 3; // 3 (group/R32) or 6 (R16+)
                         const correct = mpPts === 1;
                         const cls = exact
                           ? "bg-[var(--pitch-light)] text-[#0a1a14]"

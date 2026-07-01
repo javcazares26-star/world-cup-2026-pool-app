@@ -110,8 +110,8 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
   let pointsClass = "";
   if (isFinal && pick) {
     const pts = pickPoints(pick.home_pick, pick.away_pick, fixture);
-    if (pts === 3) {
-      pointsLabel = "+3 EXACT"; pointsClass = "bg-[var(--pitch-light)] text-[#0a1a14]";
+    if (pts >= 3) { // exact — 3 (group/R32) or 6 (R16 → Final)
+      pointsLabel = `+${pts} EXACT`; pointsClass = "bg-[var(--pitch-light)] text-[#0a1a14]";
     } else if (pts === 1) {
       pointsLabel = "+1"; pointsClass = "bg-[var(--gold)] text-[#2a2200]";
     } else {
@@ -319,8 +319,8 @@ export function MatchRow({ fixture, pick, showActual, showScore, userLocation, o
                   const pa = pick?.away_pick ?? 0;
                   const note = pick ? "" : " (default 0-0)";
                   const pts = pickPoints(ph, pa, fixture);
-                  if (pts === 3) {
-                    return <span className="text-[var(--pitch-light)] font-bold">✅ Exact Match! +3 points{note}</span>;
+                  if (pts >= 3) {
+                    return <span className="text-[var(--pitch-light)] font-bold">✅ Exact Match! +{pts} points{note}</span>;
                   }
                   if (pts === 1) {
                     const via = fixture.status_short === "PEN" ? " (penalty winner)" : "";
