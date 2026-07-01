@@ -402,6 +402,36 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
             </p>
           </div>
 
+          {/* TODAY'S MATCHES — knockout games kicking off today (user's LOCAL day) */}
+          {(() => {
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+            const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+            const todaysKo = eliminationFixtures
+              .filter(f => {
+                const k = new Date(f.kickoff_utc);
+                return k >= todayStart && k < todayEnd;
+              })
+              .sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
+            if (todaysKo.length === 0) return null;
+            return (
+              <div className="card !p-0 overflow-hidden mb-6 border-2 border-[var(--gold)]">
+                <div className="group-banner px-4 py-3 border-b-2 border-[var(--gold)] bg-[var(--gold)] bg-opacity-10 text-sm font-bold text-[var(--gold)]">
+                  🎯 TODAY'S MATCHES — Picks · Live · Results
+                </div>
+                <div className="space-y-0">
+                  {todaysKo.map(m => {
+                    const r = koTeams[m.id];
+                    const dm = r ? { ...m, home_team: r.home ?? m.home_team, away_team: r.away ?? m.away_team } : m;
+                    return (
+                      <MatchRow key={m.id} fixture={dm} pick={picks.find(p => p.fixture_id === m.id)} onSave={upsertPick} showScore userLocation={myLocation} isAdmin={isOwner} />
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Projected R32 + 3rd-place standings — only while the group stage is still ongoing */}
           {!groupStageComplete && (
             <>
