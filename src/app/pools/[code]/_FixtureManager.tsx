@@ -13,6 +13,8 @@ type FixtureEdit = {
   homeScore: number;
   awayScore: number;
   status: string;
+  homePenalty: number | null; // penalty-shootout score (knockout, status PEN)
+  awayPenalty: number | null;
   kickoff?: string; // datetime-local value (admin's local time); only set when edited
 };
 
@@ -57,6 +59,8 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
         homeScore: fixture.home_score ?? 0,
         awayScore: fixture.away_score ?? 0,
         status: fixture.status_short,
+        homePenalty: fixture.home_penalty ?? null,
+        awayPenalty: fixture.away_penalty ?? null,
       };
 
       if (field === "homeScore") {
@@ -65,6 +69,10 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
         current.awayScore = typeof value === "string" ? parseInt(value || "0", 10) : value;
       } else if (field === "status") {
         current.status = value as string;
+      } else if (field === "homePenalty") {
+        current.homePenalty = value === "" ? null : (typeof value === "string" ? parseInt(value, 10) : value);
+      } else if (field === "awayPenalty") {
+        current.awayPenalty = value === "" ? null : (typeof value === "string" ? parseInt(value, 10) : value);
       } else if (field === "kickoff") {
         current.kickoff = value as string;
       }
@@ -104,6 +112,11 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
             home_score: edit.homeScore,
             away_score: edit.awayScore,
             status_short: edit.status,
+            // Only write penalty scores for knockout matches decided on penalties.
+            ...(fixtures.find(f => f.id === edit.id)?.is_knockout
+              ? { home_penalty: edit.status === "PEN" ? edit.homePenalty : null,
+                  away_penalty: edit.status === "PEN" ? edit.awayPenalty : null }
+              : {}),
             ...(edit.kickoff ? { kickoff_utc: new Date(edit.kickoff).toISOString() } : {}),
           })
           .eq("id", edit.id)
@@ -236,6 +249,24 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
                       <option value="AET">AET</option>
                       <option value="PEN">PEN</option>
                     </select>
+                    {fixture.is_knockout && status === "PEN" && (
+                      <div className="mt-1 flex items-center justify-center gap-1" title="Penalty shootout score">
+                        <span className="text-[9px] text-[var(--muted)]">PK</span>
+                        <input
+                          type="number" min="0" max="30"
+                          value={edits[fixture.id]?.homePenalty ?? fixture.home_penalty ?? ""}
+                          onChange={(e) => updateFixture(fixture.id, "homePenalty", e.target.value)}
+                          className="w-9 bg-[var(--bg)] border border-[var(--border)] rounded px-1 py-0.5 text-center text-xs"
+                        />
+                        <span className="text-[9px] text-[var(--muted)]">-</span>
+                        <input
+                          type="number" min="0" max="30"
+                          value={edits[fixture.id]?.awayPenalty ?? fixture.away_penalty ?? ""}
+                          onChange={(e) => updateFixture(fixture.id, "awayPenalty", e.target.value)}
+                          className="w-9 bg-[var(--bg)] border border-[var(--border)] rounded px-1 py-0.5 text-center text-xs"
+                        />
+                      </div>
+                    )}
                   </td>
                   <td className="p-3 text-xs">
                     <input
