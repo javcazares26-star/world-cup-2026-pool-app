@@ -56,14 +56,19 @@ export function PoolTabs({ pool, userId, fixtures: initialFixtures, myPicks: ini
 
     const supabase = createClient();
     (async () => {
-      const { data, error } = await supabase
-        .from("picks")
-        .select("*")
-        .eq("pool_id", pool.id);
-
-      if (!error && data) {
-        setAllPicks(data);
+      // Paginate — Supabase caps a single response at 1000 rows.
+      const PAGE = 1000;
+      const all: any[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("picks").select("*").eq("pool_id", pool.id)
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error || !data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
       }
+      setAllPicks(all);
     })();
   }, [isOwner, tab, pool.id]);
 

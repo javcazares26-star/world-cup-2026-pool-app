@@ -35,12 +35,25 @@ export function Leaderboard({
   const [allPicks, setAllPicks] = useState<Pick[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  // Fetch every member's picks for this pool (RLS allows pool members to read them)
+  // Fetch every member's picks for this pool (RLS allows pool members to read
+  // them). Paginate — Supabase caps a single response at 1000 rows, and a pool
+  // can easily exceed that (members × fixtures), which would silently truncate
+  // the stats and make the leaderboard columns not reconcile with points.
   useEffect(() => {
     const supabase = createClient();
     (async () => {
-      const { data } = await supabase.from("picks").select("*").eq("pool_id", pool.id);
-      if (data) setAllPicks(data as Pick[]);
+      const PAGE = 1000;
+      const all: Pick[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("picks").select("*").eq("pool_id", pool.id)
+          .order("id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error || !data || data.length === 0) break;
+        all.push(...(data as Pick[]));
+        if (data.length < PAGE) break;
+      }
+      setAllPicks(all);
     })();
   }, [pool.id]);
 
@@ -444,11 +457,9 @@ export function Leaderboard({
                     })()}
                     <td className="p-3 text-right hidden sm:table-cell">
                       <span className="text-[var(--pitch-light)] font-semibold">{r.exact_count ?? 0}</span>
-                      <span className="text-[10px] text-[var(--muted)] ml-1">×3</span>
                     </td>
                     <td className="p-3 text-right hidden sm:table-cell">
                       <span className="text-[var(--gold)] font-semibold">{r.correct_count ?? s?.outcome ?? 0}</span>
-                      <span className="text-[10px] text-[var(--muted)] ml-1">×1</span>
                     </td>
                     <td className="p-3 text-right font-semibold">
                       {s && s.currentStreak > 0 ? (
