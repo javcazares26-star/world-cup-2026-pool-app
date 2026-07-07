@@ -105,13 +105,14 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
     const supabase = createClient();
 
     try {
-      const updates = Object.values(edits).map(edit =>
+      const results = await Promise.all(Object.values(edits).map(edit =>
         supabase
           .from("fixtures")
           .update({
             home_score: edit.homeScore,
             away_score: edit.awayScore,
             status_short: edit.status,
+            status: ["FT", "AET", "PEN"].includes(edit.status) ? "Match Finished" : undefined,
             // Only write penalty scores for knockout matches decided on penalties.
             ...(fixtures.find(f => f.id === edit.id)?.is_knockout
               ? { home_penalty: edit.status === "PEN" ? edit.homePenalty : null,
@@ -120,9 +121,18 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
             ...(edit.kickoff ? { kickoff_utc: new Date(edit.kickoff).toISOString() } : {}),
           })
           .eq("id", edit.id)
-      );
+          .select("id")
+      ));
 
-      await Promise.all(updates);
+      // An RLS block returns success with 0 rows changed — treat that as a failure.
+      const err = results.find(r => r.error);
+      const blocked = results.some(r => !r.error && (!r.data || r.data.length === 0));
+      if (err) throw err.error;
+      if (blocked) {
+        setMessage("❌ Update didn't save — no permission to edit fixtures. Run allow_admin_fixture_updates.sql in Supabase.");
+        setSaving(false);
+        return;
+      }
       setMessage(`✅ ${Object.keys(edits).length} fixture(s) updated!`);
       setEdits({});
       setTimeout(() => {
