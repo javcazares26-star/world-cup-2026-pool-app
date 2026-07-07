@@ -214,24 +214,25 @@ export async function GET(req: Request) {
     const unmatched: string[] = [];
     const nowIso = new Date().toISOString();
 
+    // Never let a degraded/empty API feed regress a match. If our row is already
+    // finished-with-a-score, only accept an API update that is itself
+    // finished-with-a-score (e.g. a genuine score correction). Otherwise keep
+    // what we have. This protects both real results and manual admin entries.
+    const isFinishedWithScore = (r: any) =>
+      FINISHED_STATUSES.includes(r?.status_short ?? "") &&
+      r?.home_score != null && r?.away_score != null;
+    const wouldRegress = (seed: any, a: any) =>
+      isFinishedWithScore(seed) && !isFinishedWithScore(a);
+
     for (const seed of seedRows ?? []) {
       if (seed.is_knockout) {
         const a = koPairing.get(seed.id) ?? null;
-        if (!a) {
-          // No real API fixture for this slot yet. If the row is holding a
-          // stale "finished" status with no real backing, reset it so it stops
-          // showing as played / awarding default points.
-          if (FINISHED_STATUSES.includes(seed.status_short ?? "")) {
-            updates.push({
-              ...seed,
-              home_score: null, away_score: null,
-              home_penalty: null, away_penalty: null,
-              status: "Not Started", status_short: "NS", minute: null,
-              updated_at: nowIso,
-            });
-          }
-          continue;
-        }
+        // No API fixture for this row this run — LEAVE IT UNTOUCHED. The sync
+        // must never wipe an existing result. Rows are only ever written from a
+        // positive API match (below) or entered manually by the admin; a missing
+        // or degraded API feed must not erase finished scores.
+        if (!a) continue;
+        if (wouldRegress(seed, a)) continue; // don't blank/downgrade a finished result
         // Copy the real teams (only once they're actually determined — never
         // overwrite a "1L"/"W86" slot with an API placeholder), plus score+status.
         const teamsKnown = isRealTeam(a.home_team) && isRealTeam(a.away_team);
@@ -249,6 +250,7 @@ export async function GET(req: Request) {
       } else {
         const a = apiGroupByPair.get(pairKey(seed.home_team, seed.away_team));
         if (!a) { unmatched.push(`${seed.home_team} vs ${seed.away_team}`); continue; }
+        if (wouldRegress(seed, a)) continue; // don't blank/downgrade a finished result
         const sameOrientation = canonTeam(seed.home_team) === canonTeam(a.home_team);
         updates.push({
           ...seed,
