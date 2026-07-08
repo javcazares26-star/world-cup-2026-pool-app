@@ -52,11 +52,16 @@ export function scoreLine(
   if (homePick === homeScore && awayPick === awayScore) return exactValue; // exact (incl. a.e.t.)
   if (statusShort === "PEN") {
     // Decided on penalties: outcome point if the predicted side matches the
-    // shootout winner. If penalty scores weren't captured, no outcome point.
-    if (homePenalty != null && awayPenalty != null) {
-      return Math.sign(homePick - awayPick) === Math.sign(homePenalty - awayPenalty) ? 1 : 0;
-    }
-    return 0;
+    // shootout winner. Prefer the explicit penalty scores; if they weren't
+    // captured, fall back to a decisive scoreline (admin entered the shootout
+    // result directly as the score). Only a pure draw with no penalties is
+    // unscoreable.
+    const winnerSign =
+      homePenalty != null && awayPenalty != null
+        ? Math.sign(homePenalty - awayPenalty)
+        : Math.sign(homeScore - awayScore);
+    if (winnerSign === 0) return 0;
+    return Math.sign(homePick - awayPick) === winnerSign ? 1 : 0;
   }
   return Math.sign(homePick - awayPick) === Math.sign(homeScore - awayScore) ? 1 : 0;
 }
