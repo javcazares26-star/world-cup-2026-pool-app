@@ -2,6 +2,8 @@
 import { useState, useMemo } from "react";
 import type { Fixture } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
+import { projectKnockout } from "@/lib/bracket-projection";
+import { isPlaceholder } from "@/lib/group-standings";
 
 type Props = {
   fixtures: Fixture[];
@@ -34,20 +36,34 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
-  // Filter fixtures by search and status
+  // Projected knockout teams so unplayed rounds (QF/SF/Final) show real names
+  // like "France vs Morocco" instead of bracket codes ("W89 vs W90").
+  const koTeams = useMemo(() => projectKnockout(fixtures, []), [fixtures]);
+  const dispTeam = (f: Fixture, side: "home" | "away"): string => {
+    const stored = side === "home" ? f.home_team : f.away_team;
+    if (!isPlaceholder(stored)) return stored;
+    const r = koTeams[f.id];
+    const proj = r ? (side === "home" ? r.home : r.away) : null;
+    return proj ?? stored;
+  };
+
+  // Filter fixtures by search and status (search matches projected team names too)
   const filteredFixtures = useMemo(() => {
+    const q = searchTerm.toLowerCase();
     return fixtures.filter(f => {
-      const matchesSearch = searchTerm === "" ||
-        f.home_team.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.away_team.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.group_label?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.round?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = q === "" ||
+        dispTeam(f, "home").toLowerCase().includes(q) ||
+        dispTeam(f, "away").toLowerCase().includes(q) ||
+        f.home_team.toLowerCase().includes(q) ||
+        f.away_team.toLowerCase().includes(q) ||
+        f.group_label?.toLowerCase().includes(q) ||
+        f.round?.toLowerCase().includes(q);
 
       const matchesStatus = filterStatus === "all" || f.status_short === filterStatus;
 
       return matchesSearch && matchesStatus;
     }).sort((a, b) => new Date(a.kickoff_utc).getTime() - new Date(b.kickoff_utc).getTime());
-  }, [fixtures, searchTerm, filterStatus]);
+  }, [fixtures, searchTerm, filterStatus, koTeams]);
 
   const updateFixture = (fixtureId: number, field: keyof FixtureEdit, value: string | number) => {
     const fixture = fixtures.find(f => f.id === fixtureId);
@@ -125,8 +141,8 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
       ));
 
       // An RLS block returns success with 0 rows changed — treat that as a failure.
-      const err = results.find(r => r.error);
-      const blocked = results.some(r => !r.error && (!r.data || r.data.length === 0));
+      const err = results.find((r: any) => r.error);
+      const blocked = results.some((r: any) => !r.error && (!r.data || r.data.length === 0));
       if (err) throw err.error;
       if (blocked) {
         setMessage("❌ Update didn't save — no permission to edit fixtures. Run allow_admin_fixture_updates.sql in Supabase.");
@@ -220,7 +236,7 @@ export function FixtureManager({ fixtures, onFixturesUpdated }: Props) {
                         {fixture.group_label || fixture.round}
                       </span>
                       <span className="font-semibold text-sm">
-                        {fixture.home_team} vs {fixture.away_team}
+                        {dispTeam(fixture, "home")} vs {dispTeam(fixture, "away")}
                       </span>
                     </div>
                   </td>
