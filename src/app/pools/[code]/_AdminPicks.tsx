@@ -124,7 +124,7 @@ export function AdminPicks({ fixtures, picks: _userPicks, members, allPicks }: P
                     {picksWithFixtures.map(({ pick, fixture }) => {
                       const isFinished = ["FT", "AET", "PEN"].includes(fixture.status_short ?? "");
                       const pts = pickPoints(pick.home_pick, pick.away_pick, fixture);
-                      const isExact = pts === 3;
+                      const isExact = pts >= 3; // 3 (group/R32) or 6 (R16 → Final)
                       const isOutcomeCorrect = pts === 1;
 
                       return (
@@ -174,7 +174,7 @@ export function AdminPicks({ fixtures, picks: _userPicks, members, allPicks }: P
                                 </div>
                                 {isFinished && (
                                   <div className="text-[10px] text-[var(--muted)] mt-1">
-                                    {isExact && "✅ Exact match! +3 points"}
+                                    {isExact && `✅ Exact match! +${pts} points`}
                                     {isOutcomeCorrect && !isExact && "⭐ Correct outcome! +1 point"}
                                     {!isExact && !isOutcomeCorrect && "No points"}
                                   </div>
